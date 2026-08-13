@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Empréstimos Financeiros - Imperatriz MA</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:14px;font-family:Arial,sans-serif;background:#08111f;color:#fff}.app{max-width:1100px;margin:auto}.card{background:#142238;padding:16px;border-radius:18px;margin:12px 0}.dash,.grid,.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.grid{grid-template-columns:1fr 1fr}.m{background:#0b1828;padding:12px;border-radius:12px;text-align:center;border:1px solid #334155}.m small{display:block;color:#cbd5e1}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button.active{background:#facc15;color:#422006}button{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;cursor:pointer;background:#38bdf8;color:#082f49}button.red{background:#ef4444;color:#fff}button.gray{background:#475569;color:#fff}button.green{background:#22c55e;color:#052e16}label{display:block;color:#cbd5e1;margin:8px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #334155;border-radius:9px;background:#071525;color:#fff}.sec{display:none}.sec.active{display:block}.table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:9px;border-bottom:1px solid #334155;text-align:left}.late{color:#fecaca}.ok{color:#bbf7d0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hidden{display:none!important}.loan-box{background:#0b1828;border:1px solid #334155;border-radius:14px;padding:14px;margin:12px 0}.loan-title,.history-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:13px;font-weight:bold}.badge.open{background:#1d4ed8}.badge.late{background:#b91c1c;color:#fff}.badge.paid{background:#15803d}.empty{color:#cbd5e1;padding:15px 0}.notice{padding:10px;border-radius:10px;background:#0b1828;margin:7px 0;border-left:4px solid #38bdf8}.notice.late{border-left-color:#ef4444}.small{font-size:13px;color:#cbd5e1}@media(max-width:700px){.dash,.grid,.summary-grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.dash,.grid,.summary-grid{grid-template-columns:1fr}table{min-width:760px}}
+
+.login-screen{position:fixed;inset:0;background:#08111f;z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px}.login-box{width:min(440px,100%);background:#142238;border:1px solid #334155;border-radius:18px;padding:20px}.login-box h1{margin-top:0}.userbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:#0b1828;border:1px solid #334155;border-radius:12px;padding:10px 12px;margin-bottom:12px}.sync{font-size:12px;color:#cbd5e1}.error{color:#fecaca;margin-top:8px}.disabled-overlay{opacity:.55;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login-screen"><div class="login-box"><h1>🔐 Empréstimos — Imperatriz/MA</h1><p class="small">Entre com seu usuário e senha para acessar os cadastros online.</p><label>Usuário</label><input id="loginUsuario" autocomplete="username"><label>Senha</label><input id="loginSenha" type="password" autocomplete="current-password"><div class="actions"><button id="entrarSistema">Entrar</button></div><div id="loginErro" class="error"></div></div></div>
+<main class="app" id="appPrincipal">
+<h1>💼 Empréstimos Financeiros — Imperatriz/MA</h1><p class="small">Projeto online separado. Os cadastros desta versão pertencem somente à unidade Imperatriz/MA.</p><div class="userbar"><div><b id="usuarioLogado">Usuário</b><div class="sync" id="syncStatus">Conectando ao servidor...</div></div><button class="gray" id="sairSistema">Sair</button></div>
+<section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Total a receber</small><b id="dTot">R$ 0,00</b></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Saldo a receber</small><b id="dSal">R$ 0,00</b></div><div class="m"><small>Juros / lucro previsto</small><b id="dLucro">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
+<div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="pagamentos">Pagamentos</button><button data-t="saude">Saúde da Empresa</button><button data-t="backup">Backup</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
+<section id="resumo" class="sec active"><div class="card"><h2>Vencimentos e avisos</h2><div id="alerts">Nenhum vencimento.</div></div></section>
+<section id="saude" class="sec"><div class="card"><h2>📊 Saúde da Empresa</h2><div id="saudeStatus" class="notice">Calculando...</div><div id="saudeResumo" class="summary-grid"></div><div id="saudeAnalise"></div></div></section>
+<section id="clientes" class="sec"><div class="card"><h2>Cadastro de cliente</h2><div class="grid"><div><label>Nome</label><input id="cNome"></div><div><label>Telefone</label><input id="cTel"></div><div><label>Documento</label><input id="cDoc"></div><div><label>Endereço</label><input id="cEnd"></div></div><label>Observações</label><textarea id="cObs"></textarea><div class="actions"><button id="salvarCliente">Salvar cliente</button><button class="gray" id="limparCliente">Limpar</button></div></div><div class="card"><input id="buscaCliente" placeholder="Pesquisar cliente"><div class="table"><table><thead><tr><th>Data de cadastro</th><th>Nome</th><th>Telefone</th><th>Documento</th><th>Responsável</th><th>Empréstimos</th><th>Ações</th></tr></thead><tbody id="tbClientes"></tbody></table></div></div><div id="historicoCliente" class="card hidden"><div class="history-head"><div><h2 id="histTitulo">Empréstimos do cliente</h2><div id="histContato"></div></div><div class="actions"><button class="green" id="compartilharHistorico">📤 Enviar histórico</button><button class="gray" id="fecharHistorico">Fechar</button></div></div><div id="histResumo" class="summary-grid"></div><div id="histLista"></div></div></section>
+<section id="emprestimos" class="sec"><div class="card"><h2>Novo empréstimo</h2><div class="grid"><div><label>Cliente</label><select id="eCliente"></select></div><div><label>Valor emprestado</label><input id="ePrincipal" type="number" step="0.01"></div><div><label>Total a receber</label><input id="eTotal" type="number" step="0.01"></div><div><label>Frequência</label><select id="eFreq"><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select></div><div><label>Número de parcelas</label><input id="eQtd" type="number" min="1" value="4"></div><div><label>Primeiro vencimento</label><input id="eData" type="date"></div></div><p class="small">A data é salva exatamente como foi escolhida, sem conversão de fuso horário.</p><div class="actions"><button id="salvarEmp">Criar empréstimo</button></div></div><div class="card"><div class="grid"><div><label>Filtrar empréstimos por cliente</label><select id="filtroEmpCliente"><option value="">Todos os clientes</option></select></div><div><label>Filtrar por frequência</label><select id="filtroEmpFreq"><option value="">Semanais e mensais</option><option value="weekly">Somente semanais</option><option value="monthly">Somente mensais</option></select></div></div><div class="table"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Emprestado</th><th>Total</th><th>Recebido</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbEmp"></tbody></table></div></div></section>
+<section id="pagamentos" class="sec"><div class="card"><h2>Registrar pagamento</h2><p class="small">O empréstimo só será marcado como quitado quando todas as parcelas, inclusive a taxa/juros incluída no total, estiverem pagas. Pagamentos acima do valor restante da parcela são bloqueados. Use “Quitar” para liquidar todo o saldo ou “Continuar” para renovar os vencimentos pendentes.</p><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
+
+<section id="verificacoes" class="sec"><div class="card"><h2>🔎 Verificações</h2><p class="small">Clientes que enviaram documentos pelo formulário de cadastro. Link para o cliente: <b id="linkFormCadastro"></b></p><div class="actions"><button class="gray" id="copiarLinkCadastro">Copiar link do cadastro</button><button class="gray" id="atualizarVerificacoes">Atualizar lista</button></div></div><div class="card"><div class="table"><table><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>CPF</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbVerificacoes"></tbody></table></div><div id="detalheVerificacao" class="hidden" style="margin-top:16px"></div></div></section>
+<section id="socios" class="sec"><div class="card"><h2>👥 Acessos ao Sistema</h2><p class="small">Cadastre sócios e funcionários. Cada pessoa terá usuário e senha próprios para entrar pelo mesmo link.</p><div class="grid"><div><label>Nome</label><input id="uNome" placeholder="Ex.: João Silva"></div><div><label>Usuário</label><input id="uUsuario" placeholder="Ex.: joao"></div><div><label>Senha inicial</label><input id="uSenha" type="password" placeholder="Mínimo 8 caracteres"></div><div><label>Tipo de acesso</label><select id="uPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — somente cadastro de clientes</option></select></div></div><div class="actions"><button id="criarSocio">Adicionar acesso</button></div><div id="uErro" class="error"></div></div><div class="card"><h2>Usuários com acesso</h2><div class="table"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbUsuarios"></tbody></table></div></div></section>
+<section id="backup" class="sec"><div class="card"><h2>Backup e relatórios</h2><div class="actions"><button id="csvClientes">Clientes CSV</button><button id="csvEmp">Empréstimos CSV</button><button id="csvPag">Pagamentos CSV</button><button id="backupBtn">Baixar backup</button><label style="background:#475569;padding:11px 14px;border-radius:10px;font-weight:bold;cursor:pointer">Importar backup<input id="importar" type="file" accept=".json" style="display:none"></label><button class="red" id="apagar">Apagar tudo</button></div></div></section>
+</main><script>
+const $=id=>document.getElementById(id);
+const BACKUP_INICIAL={clientes:[],emprestimos:[],pagamentos:[]};
+let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+function responsavelAtual(){return currentUser?.nome||currentUser?.usuario||''}
+const pad=n=>String(n).padStart(2,'0');
+function hoje(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function parseDataLocal(s){if(!s)return null;const [a,m,d]=s.split('-').map(Number);return new Date(a,m-1,d,12,0,0)}
+function dataISOlocal(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function addDias(s,n){const d=parseDataLocal(s);d.setDate(d.getDate()+n);return dataISOlocal(d)}
+function addMes(s,n){const d=parseDataLocal(s),dia=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const ultimo=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(dia,ultimo));return dataISOlocal(d)}
+function dataBR(s){if(!s)return '';const [a,m,d]=s.split('-');return `${d}/${m}/${a}`}
+const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const nome=id=>db.clientes.find(c=>c.id===id)?.nome||'Cliente removido';
+function syncMsg(t){if($('syncStatus'))$('syncStatus').textContent=t}
+async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(r.status===401)throw new Error('AUTH');const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.erro||'Erro no servidor');return body}
+function save(){clearTimeout(saveTimer);syncMsg('Salvando...');saveTimer=setTimeout(async()=>{try{const r=await api('/api/data',{method:'PUT',body:JSON.stringify({data:db,revision:serverRevision})});serverRevision=r.revision;syncMsg('Dados salvos online')}catch(e){syncMsg(e.message==='AUTH'?'Sessão encerrada':'Falha ao salvar — tente novamente')}},180)}
+async function load(){const x=await api('/api/data');serverRevision=Number(x.revision||0);db=x.data&&x.data.clientes?x.data:JSON.parse(JSON.stringify(BACKUP_INICIAL))}
+function pagoEmp(id){return db.pagamentos.filter(p=>p.empId===id).reduce((a,p)=>a+Number(p.valor),0)}
+function ehRenovacao(p){return p&&((p.tipo==='renovacao_taxa')||(p.tipo==='renovacao_juros')||(p.forma==='Pagamento confirmado'&&String(p.obs||'').includes('Pago pelo botão Pago / Próximo vencimento'))||(p.forma==='Pagamento confirmado'&&String(p.obs||'').includes('vencimento renovado sem quitação')))}
+function pagoParc(eid,pid){return db.pagamentos.filter(p=>p.empId===eid&&p.parcId===pid&&!ehRenovacao(p)).reduce((a,p)=>a+Number(p.valor),0)}
+function restanteParcela(e,p){return Math.max(0,Number(p.valor)-pagoParc(e.id,p.id))}
+function saldo(e){return e.parcelas.reduce((total,p)=>total+restanteParcela(e,p),0)}
+function valorVencido(e){return e.parcelas.filter(p=>p.data<=hoje()).reduce((a,p)=>a+restanteParcela(e,p),0)}
+function primeiroPendente(e){return e.parcelas.filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.data.localeCompare(b.data))[0]}
+function todasParcelasPagas(e){return e.parcelas.length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)}
+function atrasado(e){return e.parcelas.some(p=>restanteParcela(e,p)>.01&&p.data<=hoje())}
+function statusEmp(e){return todasParcelasPagas(e)?'Quitado':atrasado(e)?'Atrasado':'Em aberto'}
+function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(!todasParcelasPagas(e))return '';const pags=db.pagamentos.filter(p=>p.empId===e.id&&p.data).sort((a,b)=>a.data.localeCompare(b.data));return pags.length?pags[pags.length-1].data:''}
+function badge(e){const s=statusEmp(e);return `<span class="badge ${s==='Quitado'?'paid':s==='Atrasado'?'late':'open'}">${s}</span>`}
+const DADOS_COBRANCA={empresa:'AF Capel Serviços de Cobrança Ltda',telefone:'(16) 99295-4354',pix:'60.495.244/0001-14'};
+function telefoneWhatsApp(tel){let n=String(tel||'').replace(/\D/g,'');if((n.length===10||n.length===11)&&!n.startsWith('55'))n='55'+n;return n}
+function textoCobranca(e){const c=db.clientes.find(x=>x.id===e.clienteId);if(!c)return '';const vencidas=e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).sort((a,b)=>a.data.localeCompare(b.data));if(!vencidas.length)return '';const juros=Number(e.principal||0)*0.30;const primeira=vencidas[0];return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança de taxa vencida em ${dataBR(primeira.data)}.\nValor da Taxa: ${brl(juros)}.\n\nDados para pagamento:\nPIX CNPJ: ${DADOS_COBRANCA.pix}\n${DADOS_COBRANCA.empresa}\n\nTelefone para contato: ${DADOS_COBRANCA.telefone}\n\nApós o pagamento, por favor envie o comprovante. Obrigado.`}
+window.cobrarWhatsApp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;if(!atrasado(e))return alert('Este empréstimo não possui pagamento vencido.');const c=db.clientes.find(x=>x.id===e.clienteId);const tel=telefoneWhatsApp(c?.tel);if(!tel)return alert('Cadastre o telefone do cliente para enviar a cobrança pelo WhatsApp.');const msg=encodeURIComponent(textoCobranca(e));window.open(`https://wa.me/${tel}?text=${msg}`,'_blank')}
+function abrirAba(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===id));document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('active',s.id===id))}
+function renderSaude(){
+ const clientes=db.clientes.length;
+ const emprestimosAtivos=db.emprestimos.filter(e=>saldo(e)>.01).length;
+ const clientesAtivos=new Set(db.emprestimos.filter(e=>saldo(e)>.01).map(e=>e.clienteId)).size;
+ const clientesAtrasados=new Set(db.emprestimos.filter(e=>atrasado(e)&&saldo(e)>.01).map(e=>e.clienteId)).size;
+ const parcelasVencidas=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);
+ const recebido=db.pagamentos.reduce((a,p)=>a+Number(p.valor||0),0);
+ const vencido=db.emprestimos.reduce((a,e)=>a+valorVencido(e),0);
+ const taxaAtraso=clientesAtivos?clientesAtrasados/clientesAtivos:0;
+ let nivel='ÓTIMA',classe='ok',motivos=[];
+ if(clientesAtivos===0 && clientes===0){nivel='SEM DADOS';classe='';motivos.push('Cadastre clientes e empréstimos para começar a análise.');}
+ else if(taxaAtraso>=0.35 || (parcelasVencidas>=5 && taxaAtraso>=0.20)){nivel='RUIM';classe='late';motivos.push('A quantidade de clientes em atraso está alta em relação aos clientes ativos.');}
+ else if(taxaAtraso>=0.15 || parcelasVencidas>=3){nivel='BOA';classe='';motivos.push('A empresa está funcionando, mas existem atrasos que precisam de atenção.');}
+ else {nivel='ÓTIMA';classe='ok';motivos.push('A inadimplência está baixa em relação à carteira ativa.');}
+ if(recebido>0) motivos.push('Já existem pagamentos registrados no sistema.');
+ if(clientesAtivos>=10 && taxaAtraso<0.15) motivos.push('A carteira ativa tem bom volume com baixo índice de atraso.');
+ const status=$('saudeStatus');
+ if(status){status.className='notice '+classe;status.innerHTML=`<b>Situação atual: ${nivel}</b><div class="small">Análise automática baseada nos dados cadastrados no aplicativo.</div>`;}
+ if($('saudeResumo')) $('saudeResumo').innerHTML=`<div class="m"><small>Clientes cadastrados</small><b>${clientes}</b></div><div class="m"><small>Clientes ativos</small><b>${clientesAtivos}</b></div><div class="m"><small>Clientes em atraso</small><b>${clientesAtrasados}</b></div><div class="m"><small>Empréstimos ativos</small><b>${emprestimosAtivos}</b></div><div class="m"><small>Parcelas vencidas</small><b>${parcelasVencidas}</b></div><div class="m"><small>Taxa de atraso</small><b>${(taxaAtraso*100).toFixed(1).replace('.',',')}%</b></div><div class="m"><small>Total recebido</small><b>${brl(recebido)}</b></div><div class="m"><small>Valor vencido</small><b>${brl(vencido)}</b></div>`;
+ if($('saudeAnalise')) $('saudeAnalise').innerHTML=`<h3>Análise</h3>${motivos.map(m=>`<div class="notice ${nivel==='RUIM'?'late':''}">${esc(m)}</div>`).join('')}<p class="small">Critério: Ótima = menos de 15% dos clientes ativos em atraso; Boa = entre 15% e 35% ou alguns vencimentos acumulados; Ruim = 35% ou mais dos clientes ativos em atraso, ou combinação de muitos vencimentos e inadimplência.</p>`;
+}
+function render(){save();$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dTot').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.total),0));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dSal').textContent=brl(db.emprestimos.reduce((a,e)=>a+saldo(e),0));$('dLucro').textContent=brl(db.emprestimos.reduce((a,e)=>a+Math.max(0,Number(e.total)-Number(e.principal)),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);let pend=[];db.emprestimos.forEach(e=>e.parcelas.forEach(p=>{const r=restanteParcela(e,p);if(r>.009)pend.push({e,p,r})}));pend.sort((a,b)=>a.p.data.localeCompare(b.p.data));$('alerts').innerHTML=pend.length?pend.slice(0,30).map(x=>`<div class="notice ${x.p.data<=hoje()?'late':''}"><b>${esc(nome(x.e.clienteId))}</b> — Parcela ${x.p.n} — ${dataBR(x.p.data)} — ${brl(x.r)} ${x.p.data<=hoje()?`<b>VENCIDA</b> <button class="green" onclick="pagoRenovar('${x.e.id}')">✅ Marcar pago</button> <button class="green" onclick="cobrarWhatsApp('${x.e.id}')">💬 Cobrar no WhatsApp</button>`:'pendente'}</div>`).join(''):'Nenhum vencimento pendente.';renderClientes();opts();renderEmp();renderPag();renderSaude();if(clienteHistorico)renderHistorico(clienteHistorico)}
+function renderClientes(){const q=$('buscaCliente').value.toLowerCase();const lista=[...db.clientes].filter(c=>(c.nome+c.tel+c.doc).toLowerCase().includes(q)).sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')||a.nome.localeCompare(b.nome,'pt-BR'));$('tbClientes').innerHTML=lista.map(c=>`<tr><td>${c.criadoEm?dataBR(c.criadoEm):'Sem data'}</td><td>${esc(c.nome)}</td><td>${esc(c.tel)}</td><td>${esc(c.doc)}</td><td>${esc(c.responsavel||'')}</td><td>${currentUser?.papel==='funcionario'?'—':db.emprestimos.filter(e=>e.clienteId===c.id).length}</td><td>${currentUser?.papel==='funcionario'?'<span class="small">Cadastro somente leitura</span>':`<button class="green" onclick="verCliente('${c.id}')">Ver empréstimos</button> <button class="green" onclick="compartilharCliente('${c.id}')">📤 Enviar histórico</button> <button onclick="novoEmp('${c.id}')">Novo empréstimo</button> <button class="green" onclick="alterarTelefone('${c.id}')">📞 Alterar telefone</button> <button onclick="editarCliente('${c.id}')">Editar</button> <button class="red" onclick="excluirCliente('${c.id}')">Excluir</button>`}</td></tr>`).join('')}
+function opts(){const ce=$('eCliente').value,pe=$('pEmp').value,fi=$('filtroEmpCliente').value,co=[...db.clientes].sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')||a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');$('eCliente').innerHTML='<option value="">Selecione</option>'+co;$('filtroEmpCliente').innerHTML='<option value="">Todos os clientes</option>'+co;if(db.clientes.some(c=>c.id===ce))$('eCliente').value=ce;if(db.clientes.some(c=>c.id===fi))$('filtroEmpCliente').value=fi;$('pEmp').innerHTML='<option value="">Selecione</option>'+[...db.emprestimos].filter(e=>saldo(e)>.01).sort((a,b)=>(primeiroPendente(a)?.data||'9999').localeCompare(primeiroPendente(b)?.data||'9999')||nome(a.clienteId).localeCompare(nome(b.clienteId))).map(e=>`<option value="${e.id}">${esc(nome(e.clienteId))} — ${e.freq==='weekly'?'Semanal':'Mensal'} — ${dataBR(primeiroPendente(e)?.data)} — ${brl(saldo(e))}</option>`).join('');if(db.emprestimos.some(e=>e.id===pe&&saldo(e)>.01))$('pEmp').value=pe;renderParc()}
+function renderParc(){const e=db.emprestimos.find(x=>x.id===$('pEmp').value);$('pParc').innerHTML=e?[...e.parcelas].filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.n-b.n).map(p=>`<option value="${p.id}">Parcela ${p.n} — ${dataBR(p.data)} — ${brl(restanteParcela(e,p))}</option>`).join(''):''}
+function renderEmp(){const f=$('filtroEmpCliente').value,ff=$('filtroEmpFreq').value;$('tbEmp').innerHTML=[...db.emprestimos].filter(e=>(!f||e.clienteId===f)&&(!ff||e.freq===ff)).sort((a,b)=>(primeiroPendente(a)?.data||'9999').localeCompare(primeiroPendente(b)?.data||'9999')).map(e=>`<tr><td>${esc(nome(e.clienteId))}</td><td>${e.freq==='weekly'?'Semanal':'Mensal'}</td><td>${brl(e.principal)}</td><td>${brl(e.total)}</td><td>${brl(pagoEmp(e.id))}</td><td>${brl(saldo(e))}</td><td>${badge(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</td><td><button class="green" onclick="verCliente('${e.clienteId}')">Detalhes</button> ${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> ${atrasado(e)?`<button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar no WhatsApp</button> `:''}<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button> <button onclick="continuarEmp('${e.id}')">Continuar</button>`:`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`} <button class="red" onclick="excluirEmp('${e.id}')">Excluir</button></td></tr>`).join('')}
+function renderPag(){$('tbPag').innerHTML=[...db.pagamentos].sort((a,b)=>b.data.localeCompare(a.data)).map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return `<tr><td>${dataBR(p.data)}</td><td>${e?esc(nome(e.clienteId)):''}</td><td>${pc?.n||''}</td><td>${brl(p.valor)}</td><td>${esc(p.forma)}</td><td>${esc(p.obs)}</td><td><button class="red" onclick="excluirPag('${p.id}')">Excluir</button></td></tr>`}).join('')}
+function renderHistorico(id){const c=db.clientes.find(x=>x.id===id);if(!c)return;clienteHistorico=id;const lista=db.emprestimos.filter(e=>e.clienteId===id);$('histTitulo').textContent='Empréstimos de '+c.nome;$('histContato').textContent=[c.tel,c.doc,c.end].filter(Boolean).join(' • ');$('histResumo').innerHTML=`<div class="m"><small>Empréstimos</small><b>${lista.length}</b></div><div class="m"><small>Emprestado</small><b>${brl(lista.reduce((a,e)=>a+Number(e.principal),0))}</b></div><div class="m"><small>Recebido</small><b>${brl(lista.reduce((a,e)=>a+pagoEmp(e.id),0))}</b></div><div class="m"><small>Saldo</small><b>${brl(lista.reduce((a,e)=>a+saldo(e),0))}</b></div>`;$('histLista').innerHTML=lista.length?lista.map((e,i)=>`<div class="loan-box"><div class="loan-title"><h3>Empréstimo ${i+1} — ${e.freq==='weekly'?'Semanal':'Mensal'}</h3><div>${badge(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</div></div><p><b>Emprestado:</b> ${brl(e.principal)} &nbsp; <b>Total:</b> ${brl(e.total)} &nbsp; <b>Recebido:</b> ${brl(pagoEmp(e.id))} &nbsp; <b>Saldo:</b> ${brl(saldo(e))}</p><div class="table"><table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Restante</th><th>Situação</th></tr></thead><tbody>${e.parcelas.map(p=>{const pg=pagoParc(e.id,p.id),r=restanteParcela(e,p),s=r<=.01?'Paga':p.data<=hoje()?'Vencida':'Pendente';return `<tr><td>${p.n}</td><td>${dataBR(p.data)}</td><td>${brl(p.valor)}</td><td>${brl(pg)}</td><td>${brl(r)}</td><td class="${s==='Vencida'?'late':s==='Paga'?'ok':''}">${s}</td></tr>`}).join('')}</tbody></table></div><div class="actions">${todasParcelasPagas(e)?`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo para este cliente</button>`:`<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button>`}</div></div>`).join(''):'<div class="empty">Nenhum empréstimo cadastrado.</div>';$('historicoCliente').classList.remove('hidden');abrirAba('clientes');setTimeout(()=>$('historicoCliente').scrollIntoView({behavior:'smooth'}),50)}
+function textoHistoricoCliente(id){
+  const c=db.clientes.find(x=>x.id===id);if(!c)return '';
+  const lista=db.emprestimos.filter(e=>e.clienteId===id);
+  const totalEmp=lista.reduce((a,e)=>a+Number(e.principal||0),0);
+  const totalReceb=lista.reduce((a,e)=>a+pagoEmp(e.id),0);
+  const totalSaldo=lista.reduce((a,e)=>a+saldo(e),0);
+  const linhas=[
+    'HISTÓRICO DO CLIENTE',
+    'Cliente: '+c.nome,
+    c.tel?'Telefone: '+c.tel:'',
+    c.doc?'Documento: '+c.doc:'',
+    c.end?'Endereço: '+c.end:'',
+    '',
+    'RESUMO',
+    'Empréstimos: '+lista.length,
+    'Total emprestado: '+brl(totalEmp),
+    'Total recebido: '+brl(totalReceb),
+    'Saldo a receber: '+brl(totalSaldo),
+    ''
+  ].filter((v,i,a)=>v!==''||i>0);
+  if(!lista.length){linhas.push('Nenhum empréstimo cadastrado.');return linhas.join('\n');}
+  lista.forEach((e,i)=>{
+    linhas.push('--------------------------------');
+    linhas.push('Empréstimo '+(i+1)+' - '+(e.freq==='weekly'?'Semanal':'Mensal'));
+    linhas.push('Emprestado: '+brl(e.principal));
+    linhas.push('Total a receber: '+brl(e.total));
+    linhas.push('Recebido: '+brl(pagoEmp(e.id)));
+    linhas.push('Saldo: '+brl(saldo(e)));
+    linhas.push('Status: '+(saldo(e)<=.01?'Quitado':(primeiroPendente(e)?.data<=hoje()?'Com atraso':'Em aberto')));
+    if(dataQuitacao(e))linhas.push('Quitado em: '+dataBR(dataQuitacao(e)));
+    linhas.push('Parcelas:');
+    e.parcelas.forEach(p=>{
+      const pg=pagoParc(e.id,p.id),r=restanteParcela(e,p),sit=r<=.01?'Paga':p.data<=hoje()?'Vencida':'Pendente';
+      linhas.push('  Parcela '+p.n+' | Venc.: '+dataBR(p.data)+' | Valor: '+brl(p.valor)+' | Pago: '+brl(pg)+' | Restante: '+brl(r)+' | '+sit);
+      const pagamentos=db.pagamentos.filter(x=>x.empId===e.id&&x.parcId===p.id).sort((a,b)=>a.data.localeCompare(b.data));
+      pagamentos.forEach(pgto=>linhas.push('    Pagamento: '+dataBR(pgto.data)+' - '+brl(pgto.valor)+' - '+(pgto.forma||'')+(pgto.obs?' - '+pgto.obs:'')));
+    });
+    linhas.push('');
+  });
+  linhas.push('Relatório gerado em '+dataBR(hoje())+'.');
+  return linhas.join('\n');
+}
+window.compartilharCliente=async id=>{
+  const c=db.clientes.find(x=>x.id===id);if(!c)return alert('Cliente não encontrado.');
+  const texto=textoHistoricoCliente(id);
+  try{
+    if(navigator.share){await navigator.share({title:'Histórico - '+c.nome,text:texto});return;}
+    if(navigator.clipboard){await navigator.clipboard.writeText(texto);alert('Histórico copiado. Agora é só colar no WhatsApp.');return;}
+  }catch(err){if(err&&err.name==='AbortError')return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([texto],{type:'text/plain;charset=utf-8'}));a.download='historico_'+c.nome.replace(/[^a-z0-9]+/gi,'_')+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+function limparCliente(){['cNome','cTel','cDoc','cEnd','cObs'].forEach(i=>$(i).value='');editCliente=null}
+$('salvarCliente').onclick=()=>{const n=$('cNome').value.trim();if(!n)return alert('Informe o nome.');const anterior=editCliente?db.clientes.find(x=>x.id===editCliente):null;const agora=new Date();const c={id:editCliente||uid(),nome:n,tel:$('cTel').value,doc:$('cDoc').value,end:$('cEnd').value,obs:$('cObs').value,responsavel:anterior?.responsavel||responsavelAtual(),unidade:'Imperatriz - MA',criadoEm:anterior?.criadoEm||hoje(),criadoHora:anterior?.criadoHora||`${pad(agora.getHours())}:${pad(agora.getMinutes())}:${pad(agora.getSeconds())}`};if(editCliente)db.clientes[db.clientes.findIndex(x=>x.id===editCliente)]=c;else db.clientes.push(c);limparCliente();render()};$('limparCliente').onclick=limparCliente;$('buscaCliente').oninput=renderClientes;$('filtroEmpCliente').onchange=renderEmp;$('filtroEmpFreq').onchange=renderEmp;$('fecharHistorico').onclick=()=>{$('historicoCliente').classList.add('hidden');clienteHistorico=null};$('compartilharHistorico').onclick=()=>{if(clienteHistorico)compartilharCliente(clienteHistorico)};
+window.alterarTelefone=id=>{
+  const c=db.clientes.find(x=>x.id===id);if(!c)return;
+  document.getElementById('modalTelefone')?.remove();
+  const fundo=document.createElement('div');
+  fundo.id='modalTelefone';
+  fundo.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px';
+  const caixa=document.createElement('div');
+  caixa.style.cssText='width:min(420px,100%);background:#0f172a;border:1px solid #334155;border-radius:16px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.45);color:#fff';
+  caixa.innerHTML=`<h2 style="margin:0 0 8px">📞 Alterar telefone</h2><div style="margin-bottom:12px;color:#cbd5e1">${esc(c.nome)}</div><label style="display:block;margin-bottom:6px">Novo número</label><input id="novoTelefoneCliente" inputmode="tel" autocomplete="tel" value="${esc(c.tel||'')}" style="width:100%;box-sizing:border-box;margin-bottom:14px"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="gray" id="cancelarTelefone">Cancelar</button><button type="button" class="green" id="salvarTelefone">Salvar telefone</button></div><div id="msgTelefone" class="small" style="margin-top:10px"></div>`;
+  fundo.appendChild(caixa);document.body.appendChild(fundo);
+  const inp=document.getElementById('novoTelefoneCliente');
+  setTimeout(()=>{inp.focus();inp.select()},30);
+  document.getElementById('cancelarTelefone').onclick=()=>fundo.remove();
+  fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
+  document.getElementById('salvarTelefone').onclick=()=>{
+    const tel=inp.value.trim();
+    if(!tel){document.getElementById('msgTelefone').textContent='Informe o novo número de telefone.';inp.focus();return;}
+    c.tel=tel;save();renderClientes();opts();if(clienteHistorico===id)renderHistorico(id);
+    fundo.remove();
+  };
+};window.editarCliente=id=>{const c=db.clientes.find(x=>x.id===id);editCliente=id;$('cNome').value=c.nome;$('cTel').value=c.tel;$('cDoc').value=c.doc;$('cEnd').value=c.end;$('cObs').value=c.obs;window.scrollTo({top:0,behavior:'smooth'})};window.excluirCliente=id=>{const c=db.clientes.find(x=>x.id===id);if(!c)return;if(db.emprestimos.some(e=>e.clienteId===id))return alert('Este cliente possui empréstimos cadastrados. Exclua primeiro os empréstimos dele.');if(!confirm(`Excluir o cliente ${c.nome}?`))return;db.clientes=db.clientes.filter(x=>x.id!==id);if(clienteHistorico===id){clienteHistorico=null;$('historicoCliente').classList.add('hidden')}render()};window.verCliente=id=>renderHistorico(id);window.novoEmp=id=>{
+  const cliente=db.clientes.find(c=>c.id===id);
+  if(!cliente){alert('Cliente não encontrado.');return;}
+  clienteHistorico=null;
+  $('historicoCliente').classList.add('hidden');
+  abrirAba('emprestimos');
+  opts();
+  $('eCliente').value=id;
+  $('ePrincipal').value='';
+  $('eTotal').value='';
+  $('eQtd').value=4;
+  $('eData').value=hoje();
+  setTimeout(()=>{
+    $('eCliente').value=id;
+    document.querySelector('#emprestimos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+    $('ePrincipal').focus();
+  },50);
+};
+$('salvarEmp').onclick=()=>{const cid=$('eCliente').value,p=+$('ePrincipal').value,t=+$('eTotal').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;if(!cid||p<=0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha todos os dados corretamente.');let base=+(t/q).toFixed(2),s=0,parcelas=[];for(let i=1;i<=q;i++){const val=i===q?+(t-s).toFixed(2):base;s=+(s+val).toFixed(2);parcelas.push({id:uid(),n:i,valor:val,data:i===1?d:(f==='weekly'?addDias(d,7*(i-1)):addMes(d,i-1))})}db.emprestimos.push({id:uid(),clienteId:cid,principal:p,total:t,freq:f,primeiroVencimento:d,parcelas,criadoEm:hoje()});$('ePrincipal').value='';$('eTotal').value='';render();alert(`Empréstimo criado. Primeiro vencimento: ${dataBR(d)}`)};
+window.excluirEmp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;const temPag=db.pagamentos.some(p=>p.empId===id),msg=temPag?'Este empréstimo possui pagamentos. Excluir o empréstimo e todo o histórico de pagamentos?':'Excluir este empréstimo?';if(!confirm(msg))return;db.emprestimos=db.emprestimos.filter(x=>x.id!==id);db.pagamentos=db.pagamentos.filter(p=>p.empId!==id);render()};
+window.quitarEmp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e||saldo(e)<=.01)return;const restante=saldo(e);if(!confirm(`Quitar todo o saldo de ${brl(restante)} de ${nome(e.clienteId)}?`))return;e.parcelas.forEach(pc=>{const r=restanteParcela(e,pc);if(r>.01)db.pagamentos.push({id:uid(),empId:e.id,parcId:pc.id,valor:+r.toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação total do empréstimo'})});e.dataQuitacao=hoje();render();if(confirm('Empréstimo quitado. Deseja fazer um novo empréstimo para este cliente agora?'))novoEmp(e.clienteId)};
+window.continuarEmp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e||saldo(e)<=.01)return;const pend=e.parcelas.filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.n-b.n);if(!pend.length)return;if(!confirm(`Continuar o empréstimo de ${nome(e.clienteId)} e renovar ${pend.length} vencimento(s) pendente(s)?`))return;const primeira=e.freq==='weekly'?addDias(hoje(),7):addMes(hoje(),1);pend.forEach((pc,i)=>{pc.data=i===0?primeira:(e.freq==='weekly'?addDias(primeira,7*i):addMes(primeira,i))});e.primeiroVencimento=e.parcelas[0]?.data||e.primeiroVencimento;e.renovadoEm=hoje();render();alert(`Vencimentos renovados. Próximo pagamento: ${dataBR(primeira)}.`)};
+window.pagoRenovar=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;const pc=[...e.parcelas].filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.data.localeCompare(b.data)||a.n-b.n)[0]||[...e.parcelas].sort((a,b)=>a.data.localeCompare(b.data)||a.n-b.n)[0];if(!pc)return;const taxa=+(Number(e.principal||0)*0.30).toFixed(2);const tipo=e.freq==='weekly'?'semanal':'mensal';if(!confirm(`Confirmar recebimento de ${brl(taxa)} da taxa de ${nome(e.clienteId)} e renovar o vencimento ${tipo}? O capital e o saldo do empréstimo NÃO serão reduzidos.`))return;db.pagamentos.push({id:uid(),empId:e.id,parcId:null,valor:taxa,data:hoje(),forma:'Pagamento de taxa',obs:'Taxa de 30% paga — renovação de vencimento sem abatimento do capital',tipo:'renovacao_taxa'});const base=pc.data&&pc.data>=hoje()?pc.data:hoje();const novaData=e.freq==='weekly'?addDias(base,7):addMes(base,1);pc.data=novaData;e.primeiroVencimento=e.parcelas[0]?.data||e.primeiroVencimento;e.renovadoEm=hoje();if(e.dataQuitacao)delete e.dataQuitacao;render();alert(`Taxa registrada separadamente. O empréstimo continua ATIVO e o capital não foi reduzido. Próximo vencimento: ${dataBR(novaData)}.`)};
+
+
+$('pEmp').onchange=renderParc;$('salvarPag').onclick=()=>{const eid=$('pEmp').value,pid=$('pParc').value,v=+$('pValor').value,d=$('pData').value;if(!eid||!pid||v<=0||!d)return alert('Preencha o pagamento.');const e=db.emprestimos.find(x=>x.id===eid),pc=e?.parcelas.find(x=>x.id===pid),r=pc?Math.max(0,pc.valor-pagoParc(eid,pid)):0;if(v>r+.01)return alert(`O valor pago não pode ser maior que o restante da parcela (${brl(r)}).`);db.pagamentos.push({id:uid(),empId:eid,parcId:pid,valor:v,data:d,forma:$('pForma').value,obs:$('pObs').value});$('pValor').value='';$('pObs').value='';render()};window.excluirPag=id=>{const p=db.pagamentos.find(x=>x.id===id);if(!p)return;if(!confirm(`Excluir o pagamento de ${brl(p.valor)}?`))return;db.pagamentos=db.pagamentos.filter(x=>x.id!==id);render()};
+function download(nome,txt,tipo){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:tipo}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}function csv(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(';')).join('\n')}
+$('csvClientes').onclick=()=>download('clientes.csv',csv([['Data de cadastro','Nome','Telefone','Documento','Endereço','Responsável','Unidade'],...[...db.clientes].sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')).map(c=>[c.criadoEm?dataBR(c.criadoEm):'Sem data',c.nome,c.tel,c.doc,c.end,c.responsavel||'',c.unidade||'Imperatriz - MA'])]),'text/csv');$('csvEmp').onclick=()=>download('emprestimos.csv',csv([['Cliente','Frequência','Emprestado','Total','Recebido','Saldo','Status'],...db.emprestimos.map(e=>[nome(e.clienteId),e.freq==='weekly'?'Semanal':'Mensal',e.principal,e.total,pagoEmp(e.id),saldo(e),statusEmp(e)])]),'text/csv');$('csvPag').onclick=()=>download('pagamentos.csv',csv([['Data','Cliente','Parcela','Valor','Forma','Observação'],...db.pagamentos.map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return[dataBR(p.data),e?nome(e.clienteId):'',pc?.n||'',p.valor,p.forma,p.obs]})]),'text/csv');$('backupBtn').onclick=()=>download('backup_emprestimos.json',JSON.stringify(db,null,2),'application/json');$('importar').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.clientes||!x.emprestimos||!x.pagamentos)throw 0;db=x;render();alert('Backup importado.')}catch{alert('Backup inválido.')}};r.readAsText(f)};$('apagar').onclick=()=>{if(confirm('Apagar todos os dados?')){db={clientes:[],emprestimos:[],pagamentos:[]};render()}};
+
+async function renderUsuarios(){
+  if(!currentUser||currentUser.papel!=='admin'){if($('tabSocios'))$('tabSocios').classList.add('hidden');return;}
+  $('tabSocios').classList.remove('hidden');
+  try{
+    const lista=await api('/api/usuarios');
+    $('tbUsuarios').innerHTML=lista.map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(u.usuario)}</td><td>${u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio'}</td><td>${u.ativo!==false?'<span class="ok">Ativo</span>':'<span class="late">Desativado</span>'}</td><td>${u.papel==='admin'?'<span class="small">Acesso principal</span>':`<button class="gray" onclick="trocarSenhaUsuario('${u.id}')">Trocar senha</button> <button class="${u.ativo!==false?'red':'green'}" onclick="alternarUsuario('${u.id}',${u.ativo!==false?'false':'true'})">${u.ativo!==false?'Desativar':'Ativar'}</button>`}</td></tr>`).join('');
+  }catch(e){$('uErro').textContent=e.message;}
+}
+$('criarSocio').onclick=async()=>{
+  $('uErro').textContent='';
+  const nome=$('uNome').value.trim(),usuario=$('uUsuario').value.trim(),senha=$('uSenha').value,papel=$('uPapel').value;
+  try{
+    await api('/api/usuarios',{method:'POST',body:JSON.stringify({nome,usuario,senha,papel})});
+    $('uNome').value='';$('uUsuario').value='';$('uSenha').value='';
+    await renderUsuarios();alert('Acesso adicionado. A pessoa já pode entrar pelo mesmo link com o usuário e senha cadastrados.');
+  }catch(e){$('uErro').textContent=e.message;}
+};
+window.alternarUsuario=async(id,ativo)=>{try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({ativo})});await renderUsuarios()}catch(e){alert(e.message)}};
+window.trocarSenhaUsuario=async id=>{const senha=prompt('Digite a nova senha do usuário (mínimo 8 caracteres):');if(!senha)return;try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({senha})});alert('Senha alterada.')}catch(e){alert(e.message)}};
+
+const ROTULOS_DOC={rg_frente:'RG frente',rg_verso:'RG verso',cpf_foto:'CPF',comprovante_endereco:'Comprovante de endereço',ctps_identificacao:'CTPS identificação',ctps_historico:'CTPS histórico'};
+let listaVerificacoes=[];
+function linkCadastroCliente(){return location.origin+'/cadastro.html'}
+async function renderVerificacoes(){
+  if(currentUser?.papel==='funcionario'){if($('tabVerificacoes'))$('tabVerificacoes').classList.add('hidden');return;}
+  if($('tabVerificacoes'))$('tabVerificacoes').classList.remove('hidden');
+  if($('linkFormCadastro'))$('linkFormCadastro').textContent=linkCadastroCliente();
+  try{
+    listaVerificacoes=await api('/api/verificacoes');
+    const tb=$('tbVerificacoes');
+    if(!tb)return;
+    if(!listaVerificacoes.length){tb.innerHTML='<tr><td colspan="6" class="empty">Nenhum cliente enviou documentos ainda.</td></tr>';return;}
+    tb.innerHTML=listaVerificacoes.map(v=>{
+      const st=v.status==='aprovado'?'ok':v.status==='rejeitado'?'late':'';
+      const label=v.status==='aprovado'?'Aprovado':v.status==='rejeitado'?'Rejeitado':'Pendente';
+      const dt=v.criadoEm?new Date(v.criadoEm):null;
+      const data=dt&&!isNaN(dt)?dt.toLocaleString('pt-BR'):'';
+      return `<tr><td>${esc(data)}</td><td>${esc(v.nome)}</td><td>${esc(v.telefone)}</td><td>${esc(v.cpf)}</td><td class="${st}">${label}</td><td><button class="green" onclick="verVerificacao('${v.id}')">Ver documentos</button> <button class="red" onclick="excluirVerificacao('${v.id}')">Excluir</button></td></tr>`;
+    }).join('');
+  }catch(e){if($('tbVerificacoes'))$('tbVerificacoes').innerHTML=`<tr><td colspan="6" class="late">${esc(e.message)}</td></tr>`;}
+}
+window.verVerificacao=id=>{
+  const v=listaVerificacoes.find(x=>x.id===id);if(!v)return;
+  const box=$('detalheVerificacao');
+  const docs=(v.arquivos||[]).map(a=>{
+    const url=`/api/verificacoes/${encodeURIComponent(v.id)}/arquivo/${encodeURIComponent(a.id)}`;
+    const rot=ROTULOS_DOC[a.campo]||a.campo;
+    const isImg=String(a.mime||'').startsWith('image/');
+    return `<div class="loan-box"><b>${esc(rot)}</b><div class="small">${esc(a.nome)}</div>${isImg?`<p><img src="${url}" alt="${esc(rot)}" style="max-width:100%;border-radius:10px;margin-top:8px"></p>`:`<p><a href="${url}" target="_blank" rel="noopener" style="color:#38bdf8">Abrir PDF / arquivo</a></p>`}</div>`;
+  }).join('')||`<div class="empty">${v.status==='rejeitado'?'Documentos apagados após a rejeição.':'Sem arquivos.'}</div>`;
+  box.classList.remove('hidden');
+  box.innerHTML=`<div class="history-head"><div><h2>${esc(v.nome)}</h2><div class="small">${esc(v.telefone)} • CPF ${esc(v.cpf)} • RG ${esc(v.rg)}</div><div class="small">${esc(v.endereco)}</div></div></div>
+    <div class="actions">
+      ${v.status!=='aprovado'?`<button class="green" onclick="decidirVerificacao('${v.id}','aprovado')">Aprovar e cadastrar cliente</button>`:''}
+      ${v.status!=='rejeitado'?`<button class="red" onclick="decidirVerificacao('${v.id}','rejeitado')">Rejeitar</button>`:''}
+      <button class="red" onclick="excluirVerificacao('${v.id}')">Excluir</button>
+      <button class="gray" onclick="$('detalheVerificacao').classList.add('hidden')">Fechar</button>
+    </div>
+    ${docs}`;
+  box.scrollIntoView({behavior:'smooth'});
+};
+window.excluirVerificacao=async id=>{
+  const v=listaVerificacoes.find(x=>x.id===id);
+  if(!v)return;
+  if(!confirm('Excluir o cadastro de '+v.nome+' e apagar os documentos?'))return;
+  try{
+    await api('/api/verificacoes/'+encodeURIComponent(id),{method:'DELETE'});
+    $('detalheVerificacao').classList.add('hidden');
+    await renderVerificacoes();
+  }catch(e){alert(e.message);}
+};
+window.decidirVerificacao=async(id,status)=>{
+  try{
+    await api('/api/verificacoes/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({status})});
+    if(status==='aprovado'){await load();render();}
+    await renderVerificacoes();
+    verVerificacao(id);
+    alert(status==='aprovado'?'Documentos aprovados. O cliente foi cadastrado.':'Cadastro rejeitado. Os documentos foram apagados.');
+  }catch(e){alert(e.message);}
+};
+$('copiarLinkCadastro')?.addEventListener('click',async()=>{
+  const link=linkCadastroCliente();
+  try{await navigator.clipboard.writeText(link);alert('Link copiado: '+link);}catch{alert(link);}
+});
+$('atualizarVerificacoes')?.addEventListener('click',()=>renderVerificacoes());
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{abrirAba(b.dataset.t);if(b.dataset.t==='verificacoes')renderVerificacoes();});$('pData').value=hoje();$('eData').value=hoje();
+function aplicarPermissoes(){
+  const funcionario=currentUser?.papel==='funcionario';
+  document.querySelector('.dash')?.classList.toggle('hidden',funcionario);
+  document.querySelectorAll('.tabs button').forEach(b=>{if(funcionario)b.classList.toggle('hidden',b.dataset.t!=='clientes');else if(b.id==='tabVerificacoes')b.classList.remove('hidden');});
+  if(funcionario){
+    abrirAba('clientes');
+    if($('historicoCliente'))$('historicoCliente').classList.add('hidden');
+  }
+}
+async function iniciar(){try{currentUser=await api('/api/me');$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginScreen').classList.remove('hidden')}}
+$('entrarSistema').onclick=async()=>{const usuario=$('loginUsuario').value.trim(),senha=$('loginSenha').value;$('loginErro').textContent='';try{currentUser=await api('/api/login',{method:'POST',body:JSON.stringify({usuario,senha})});$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginErro').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
+$('loginSenha').addEventListener('keydown',e=>{if(e.key==='Enter')$('entrarSistema').click()});
+$('sairSistema').onclick=async()=>{try{await api('/api/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;$('loginSenha').value='';$('loginScreen').classList.remove('hidden')};
+iniciar();
+</script></body></html>

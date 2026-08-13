@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cadastro de Cliente</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;color:#1f2937}.wrap{max-width:760px;margin:auto;padding:16px}.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 12px #0001;margin-bottom:16px}h1{font-size:24px;margin:0 0 8px}.muted{color:#6b7280;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.grid{grid-template-columns:1fr}}label{font-weight:700;font-size:14px;display:block;margin:10px 0 6px}input,textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}input[type=file]{padding:9px;background:#fafafa}.btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;background:#111827;color:white;margin-top:14px}.btn.secondary{background:#0a7c4a}.notice{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:10px;font-size:13px}.ok{display:none;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:12px;border-radius:10px;margin-top:12px}.admin-link{display:block;text-align:center;margin:14px 0;color:#2563eb;text-decoration:none}.small{font-size:12px;color:#6b7280}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Cadastro de Cliente</h1>
+    <p class="muted">Preencha seus dados e anexe fotos legíveis dos documentos solicitados.</p>
+    <div class="notice">Seus documentos devem ser enviados somente por este formulário protegido. Evite enviar CPF, RG ou carteira profissional diretamente pelo WhatsApp.</div>
+  </div>
+
+  <form class="card" id="formCadastro" enctype="multipart/form-data">
+    <div class="grid">
+      <div><label>Nome completo</label><input name="nome" required></div>
+      <div><label>WhatsApp</label><input name="telefone" inputmode="tel" placeholder="(00) 00000-0000" required></div>
+    </div>
+    <label>Endereço completo</label><textarea name="endereco" rows="3" required></textarea>
+    <div class="grid">
+      <div><label>CPF</label><input name="cpf" inputmode="numeric" required></div>
+      <div><label>Documento de identidade / RG</label><input name="rg" required></div>
+    </div>
+
+    <label>RG / Identidade - frente</label><input type="file" name="rg_frente" accept="image/*,.pdf" capture="environment" required>
+    <label>RG / Identidade - verso</label><input type="file" name="rg_verso" accept="image/*,.pdf" capture="environment">
+    <label>CPF - foto</label><input type="file" name="cpf_foto" accept="image/*,.pdf" capture="environment">
+    <label>Comprovante de endereço</label><input type="file" name="comprovante_endereco" accept="image/*,.pdf" capture="environment" required>
+    <label>Carteira Profissional - identificação</label><input type="file" name="ctps_identificacao" accept="image/*,.pdf" capture="environment">
+    <label>Histórico da Carteira Profissional - todas as páginas necessárias</label><input type="file" name="ctps_historico" accept="image/*,.pdf" capture="environment" multiple>
+
+    <label style="font-weight:400"><input type="checkbox" name="consentimento" required style="width:auto"> Autorizo o uso dos dados e documentos exclusivamente para análise e cadastro, conforme informado pelo responsável pelo atendimento.</label>
+
+    <button class="btn" type="submit" id="btnEnviar">Enviar cadastro</button>
+    <div class="ok" id="ok">Cadastro enviado. Os documentos foram encaminhados para verificação.</div>
+    <p class="small" id="erroEnvio" style="color:#b91c1c"></p>
+    <p class="small">Após o envio, a equipe analisa os documentos na aba Verificações do sistema.</p>
+  </form>
+</div>
+<script>
+document.getElementById('formCadastro').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const ok = document.getElementById('ok');
+  const erro = document.getElementById('erroEnvio');
+  const btn = document.getElementById('btnEnviar');
+  ok.style.display = 'none';
+  erro.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch('/api/cadastro', { method: 'POST', body: new FormData(this) });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.erro || 'Falha no envio');
+    ok.style.display = 'block';
+    ok.scrollIntoView({ behavior: 'smooth' });
+    this.reset();
+  } catch (err) {
+    erro.textContent = err.message || 'Não foi possível enviar.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar cadastro';
+  }
+});
+</script>
+</body>
+</html>
