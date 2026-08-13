@@ -12,9 +12,31 @@ const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const MIME_OK = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']);
 const CAMPOS_ARQ = new Set(['rg_frente', 'rg_verso', 'cpf_foto', 'comprovante_endereco', 'ctps_identificacao', 'ctps_historico']);
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE || 'gestaoemprestimosalex';
 const IS_PROD = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 const SESSION_HOURS = 12;
 const ON_VERCEL = Boolean(process.env.VERCEL);
+
+function signSession(user, expira) {
+  const payload = Buffer.from(JSON.stringify({ user, expira })).toString('base64url');
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  return payload + '.' + sig;
+}
+function parseSessionToken(token) {
+  try {
+    const i = String(token).lastIndexOf('.');
+    if (i < 1) return null;
+    const payload = token.slice(0, i);
+    const sig = token.slice(i + 1);
+    const expect = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expect);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!data || !data.user || Number(data.expira) < Date.now()) return null;
+    return data;
+  } catch { return null; }
+}
 
 function hashSenha(senha, salt = crypto.randomBytes(16).toString('hex')) {
   const hash = crypto.scryptSync(String(senha), salt, 64).toString('hex');
@@ -41,25 +63,20 @@ function json(res, status, obj, extraHeaders = {}) {
   res.end(body);
 }
 
-function readBody(req, limit = 5 * 1024 * 1024) {
-  return new Promise((resolve, reject) => {
-    let size = 0;
-    const chunks = [];
-    req.on('data', chunk => {
-      size += chunk.length;
-      if (size > limit) {
-        reject(new Error('BODY_TOO_LARGE'));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', () => {
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
-      catch { reject(new Error('JSON_INVALID')); }
-    });
-    req.on('error', reject);
-  });
+async function readBody(req, limit = 5 * 1024 * 1024) {
+  if (req.body != null) {
+    if (Buffer.isBuffer(req.body)) return JSON.parse(req.body.toString('utf8') || '{}');
+    if (typeof req.body === 'string') return JSON.parse(req.body || '{}');
+    if (typeof req.body === 'object') return req.body;
+  }
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limit) throw new Error('BODY_TOO_LARGE');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 }
 
 function cookieMap(req) {
@@ -71,14 +88,12 @@ function cookieMap(req) {
   return out;
 }
 
-async function getSession(req) {
+function getSession(req) {
   const token = cookieMap(req).sessao;
   if (!token) return null;
-  const s = await db.readSession(token);
+  const s = parseSessionToken(token);
   if (!s) return null;
-  const expira = Date.now() + SESSION_HOURS * 3600 * 1000;
-  await db.touchSession(token, expira);
-  return { token, user: s.user, expira };
+  return { token, user: s.user, expira: s.expira };
 }
 
 function safeUser(u) { return { id: u.id, usuario: u.usuario, nome: u.nome, papel: u.papel, ativo: u.ativo !== false }; }
@@ -186,6 +201,10 @@ function securityHeaders() {
 
 function serveStatic(req, res) {
   const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (urlPath === '/favicon.ico') {
+    res.writeHead(204, securityHeaders());
+    return res.end();
+  }
   const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
   const file = path.normalize(path.join(PUBLIC_DIR, rel));
   if (!file.startsWith(PUBLIC_DIR)) return json(res, 403, { erro: 'Acesso negado' });
@@ -251,26 +270,28 @@ async function handleApi(req, res) {
     if (a.n >= 20) return json(res, 429, { erro: 'Muitas tentativas. Tente novamente mais tarde.' });
     try {
       const body = await readBody(req, 50 * 1024);
-      const u = (await db.readUsers()).find(x => x.usuario === String(body.usuario || '').trim() && x.ativo !== false);
+      const u = (await db.readUsers()).find(x => String(x.usuario || '').toLowerCase() === String(body.usuario || '').trim().toLowerCase() && x.ativo !== false);
       if (!u || !senhaConfere(String(body.senha || ''), u)) {
         a.n += 1; loginAttempts.set(ip, a);
         return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
       }
       loginAttempts.delete(ip);
-      const token = crypto.randomBytes(32).toString('hex');
-      await db.createSession(token, safeUser(u), Date.now() + SESSION_HOURS * 3600 * 1000);
-      const cookie = `sessao=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_HOURS * 3600}${IS_PROD ? '; Secure' : ''}`;
+      const expira = Date.now() + SESSION_HOURS * 3600 * 1000;
+      const token = signSession(safeUser(u), expira);
+      const cookie = `sessao=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_HOURS * 3600}${IS_PROD ? '; Secure' : ''}`;
       return json(res, 200, safeUser(u), { 'Set-Cookie': cookie });
-    } catch { return json(res, 400, { erro: 'Dados inválidos.' }); }
+    } catch (e) {
+      console.error('login', e);
+      return json(res, 400, { erro: 'Dados inválidos.' });
+    }
   }
 
-  const session = await getSession(req);
+  const session = getSession(req);
   if (!session) return json(res, 401, { erro: 'Sessão encerrada.' });
 
   if (route === '/api/me' && req.method === 'GET') return json(res, 200, session.user);
   if (route === '/api/logout' && req.method === 'POST') {
-    await db.deleteSession(session.token);
-    return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' });
+    return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
   }
   if (route === '/api/usuarios' && req.method === 'GET') {
     if (session.user.papel !== 'admin') return json(res, 403, { erro: 'Somente o administrador pode gerenciar acessos.' });
@@ -419,8 +440,10 @@ async function handleApi(req, res) {
   return json(res, 404, { erro: 'Rota não encontrada.' });
 }
 
-const server = http.createServer((req, res) => {
-  Object.entries(securityHeaders()).forEach(([k, v]) => res.setHeader(k, v));
+function handleRequest(req, res) {
+  Object.entries(securityHeaders()).forEach(([k, v]) => {
+    try { res.setHeader(k, v); } catch {}
+  });
   if ((req.url || '').startsWith('/api/')) {
     handleApi(req, res).catch(err => {
       console.error(err);
@@ -429,18 +452,14 @@ const server = http.createServer((req, res) => {
   } else {
     serveStatic(req, res);
   }
-});
+}
+
+const server = http.createServer(handleRequest);
 
 const ready = (async () => {
   await db.pingSchema();
   await db.initUsers(hashSenha);
-})().catch(e => {
-  console.error('Supabase indisponível ou schema não aplicado.');
-  console.error('Abra o SQL Editor do projeto e execute o arquivo supabase/schema.sql');
-  console.error(e.message);
-  if (!ON_VERCEL) process.exit(1);
-  throw e;
-});
+})();
 
 ready.then(() => {
   if (ON_VERCEL) return;
@@ -449,9 +468,21 @@ ready.then(() => {
     console.log('Dados salvos no Supabase (tabelas gestaoemprestimosalex_*).');
     if (!IS_PROD) console.log('Teste local: admin/Admin123!. Cadastre sócios e funcionários na aba Acessos.');
   });
+}).catch(e => {
+  console.error('Supabase indisponível ou schema não aplicado.');
+  console.error(e.message);
+  if (!ON_VERCEL) process.exit(1);
 });
 
-module.exports = async (req, res) => {
-  await ready;
-  server.emit('request', req, res);
-};
+async function vercelHandler(req, res) {
+  try {
+    await ready;
+  } catch (e) {
+    console.error(e);
+    if (!res.headersSent) json(res, 500, { erro: 'Falha ao conectar no Supabase. Confira SUPABASE_URL e SUPABASE_ANON_KEY.' });
+    return;
+  }
+  handleRequest(req, res);
+}
+
+module.exports = vercelHandler;
