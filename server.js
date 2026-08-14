@@ -357,24 +357,27 @@ async function handleApi(req, res) {
         const existentesBody = data.clientes.filter(c => idsAtuais.has(c.id));
         if (existentesBody.length !== atual.data.clientes.length) return json(res, 403, { erro: 'Funcionário não pode excluir clientes.' });
         const porId = new Map(data.clientes.map(c => [c.id, c]));
-        for (const antigo of atual.data.clientes) {
-          const recebido = porId.get(antigo.id);
-          if (JSON.stringify(recebido) !== JSON.stringify(antigo)) return json(res, 403, { erro: 'Funcionário não pode alterar clientes já cadastrados.' });
-        }
         const novos = data.clientes.filter(c => !idsAtuais.has(c.id)).map(c => ({ ...c, responsavel: session.user.nome || session.user.usuario, usuarioResponsavel: session.user.usuario, papelResponsavel: 'funcionario' }));
+        const clientesFinais = atual.data.clientes.map(antigo => {
+          const recebido = porId.get(antigo.id);
+          if (!recebido) return antigo;
+          return { ...recebido, id: antigo.id, responsavel: antigo.responsavel, usuarioResponsavel: antigo.usuarioResponsavel, papelResponsavel: antigo.papelResponsavel, criadoEm: antigo.criadoEm, criadoHora: antigo.criadoHora, cidadeId: antigo.cidadeId, unidade: antigo.unidade };
+        }).concat(novos);
         const idsEmp = new Set((atual.data.emprestimos || []).map(e => e.id));
         const empBody = Array.isArray(data.emprestimos) ? data.emprestimos : [];
         if (empBody.filter(e => idsEmp.has(e.id)).length !== idsEmp.size) return json(res, 403, { erro: 'Funcionário não pode excluir empréstimos.' });
         const empPorId = new Map(empBody.map(e => [e.id, e]));
         const novosEmp = empBody.filter(e => !idsEmp.has(e.id));
-        const idsClientes = new Set([...atual.data.clientes, ...novos].map(c => c.id));
+        const idsClientes = new Set(clientesFinais.map(c => c.id));
         if (novosEmp.some(e => !idsClientes.has(e.clienteId))) return json(res, 400, { erro: 'Empréstimo sem cliente válido.' });
         const emprestimosFinais = (atual.data.emprestimos || []).map(antigo => empPorId.get(antigo.id) || antigo).concat(novosEmp);
         const idsPag = new Set((atual.data.pagamentos || []).map(p => p.id));
         const pagBody = Array.isArray(data.pagamentos) ? data.pagamentos : [];
         if (pagBody.filter(p => idsPag.has(p.id)).length !== idsPag.size) return json(res, 403, { erro: 'Funcionário não pode excluir pagamentos.' });
+        const pagPorId = new Map(pagBody.map(p => [p.id, p]));
         const novosPag = pagBody.filter(p => !idsPag.has(p.id));
-        dadosSalvar = { clientes: [...atual.data.clientes, ...novos], emprestimos: emprestimosFinais, pagamentos: [...(atual.data.pagamentos || []), ...novosPag], cidades: atual.data.cidades || [] };
+        const pagamentosFinais = (atual.data.pagamentos || []).map(antigo => pagPorId.get(antigo.id) || antigo).concat(novosPag);
+        dadosSalvar = { clientes: clientesFinais, emprestimos: emprestimosFinais, pagamentos: pagamentosFinais, cidades: atual.data.cidades || [] };
       }
       const next = { revision: Number(atual.revision), data: dadosSalvar, atualizadoEm: new Date().toISOString(), atualizadoPor: session.user.usuario };
       const saved = await db.writeDb(next);
