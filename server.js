@@ -423,7 +423,8 @@ async function handleApi(req, res) {
           end: item.endereco,
           obs: 'Cadastro enviado pelo cliente (RG: ' + item.rg + ').',
           responsavel: session.user.nome || session.user.usuario,
-          unidade: 'Imperatriz - MA',
+          unidade: String(body.unidade || '').trim() || 'Sem cidade',
+          cidadeId: String(body.cidadeId || '').trim() || null,
           criadoEm,
           criadoHora: `${pad(agora.getHours())}:${pad(agora.getMinutes())}:${pad(agora.getSeconds())}`
         };
