@@ -457,12 +457,21 @@ function handleRequest(req, res) {
 
 const server = http.createServer(handleRequest);
 
-const ready = (async () => {
-  await db.pingSchema();
-  await db.initUsers(hashSenha);
-})();
+let readyPromise = null;
+function ensureReady() {
+  if (!readyPromise) {
+    readyPromise = (async () => {
+      await db.pingSchema();
+      await db.initUsers(hashSenha);
+    })();
+  }
+  return readyPromise.catch(err => {
+    readyPromise = null;
+    throw err;
+  });
+}
 
-ready.then(() => {
+ensureReady().then(() => {
   if (ON_VERCEL) return;
   server.listen(PORT, HOST, () => {
     console.log(`Empréstimos Imperatriz online em http://${HOST}:${PORT}`);
@@ -476,11 +485,31 @@ ready.then(() => {
 });
 
 async function vercelHandler(req, res) {
+  const route = (req.url || '').split('?')[0];
+  if (route === '/api/health' || route === '/health') {
+    const st = db.envStatus();
+    try {
+      await db.pingSchema();
+      return json(res, 200, { ok: true, ...st });
+    } catch (e) {
+      return json(res, 500, { ok: false, ...st, detalhe: e.message || String(e) });
+    }
+  }
   try {
-    await ready;
+    await ensureReady();
   } catch (e) {
     console.error(e);
-    if (!res.headersSent) json(res, 500, { erro: 'Falha ao conectar no Supabase. Confira SUPABASE_URL e SUPABASE_ANON_KEY.' });
+    if (!res.headersSent) {
+      const st = db.envStatus();
+      json(res, 500, {
+        erro: st.temUrl && st.temKey
+          ? ('Falha ao conectar no Supabase: ' + (e.message || 'erro desconhecido'))
+          : 'As variáveis existem no painel, mas este deploy não as está lendo. Marque Production e Preview, salve, e faça Redeploy (Redeploy with existing Build Cache desmarcado).',
+        temUrl: st.temUrl,
+        temKey: st.temKey,
+        detalhe: e.message || String(e)
+      });
+    }
     return;
   }
   handleRequest(req, res);
