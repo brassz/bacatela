@@ -303,7 +303,7 @@ function download(nome,txt,tipo){const a=document.createElement('a');a.href=URL.
 $('csvClientes').onclick=()=>download('clientes.csv',csv([['Data de cadastro','Nome','Telefone','Documento','Endereço','Responsável','Unidade'],...[...db.clientes].sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')).map(c=>[c.criadoEm?dataBR(c.criadoEm):'Sem data',c.nome,c.tel,c.doc,c.end,c.responsavel||'',c.unidade||'Imperatriz - MA'])]),'text/csv');$('csvEmp').onclick=()=>download('emprestimos.csv',csv([['Cliente','Frequência','Emprestado','Total','Recebido','Saldo','Status'],...db.emprestimos.map(e=>[nome(e.clienteId),e.freq==='weekly'?'Semanal':'Mensal',e.principal,e.total,pagoEmp(e.id),saldo(e),statusEmp(e)])]),'text/csv');$('csvPag').onclick=()=>download('pagamentos.csv',csv([['Data','Cliente','Parcela','Valor','Forma','Observação'],...db.pagamentos.map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return[dataBR(p.data),e?nome(e.clienteId):'',pc?.n||'',p.valor,p.forma,p.obs]})]),'text/csv');$('backupBtn').onclick=()=>download('backup_emprestimos.json',JSON.stringify(db,null,2),'application/json');$('importar').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.clientes||!x.emprestimos||!x.pagamentos)throw 0;db=x;render();alert('Backup importado.')}catch{alert('Backup inválido.')}};r.readAsText(f)};$('apagar').onclick=()=>{if(confirm('Apagar todos os dados desta cidade?')){const keep=cidadeAtualId;db.clientes=db.clientes.filter(c=>clienteCidadeId(c)!==keep);const ids=new Set(db.clientes.map(c=>c.id));db.emprestimos=db.emprestimos.filter(e=>ids.has(e.clienteId));const eids=new Set(db.emprestimos.map(e=>e.id));db.pagamentos=db.pagamentos.filter(p=>eids.has(p.empId));render()}};
 
 async function renderUsuarios(){
-  if(!currentUser||currentUser.papel!=='admin'){if($('tabSocios'))$('tabSocios').classList.add('hidden');return;}
+  if(!currentUser||(currentUser.papel!=='admin'&&currentUser.papel!=='socio')){if($('tabSocios'))$('tabSocios').classList.add('hidden');return;}
   $('tabSocios').classList.remove('hidden');
   try{
     const lista=await api('/api/usuarios');
@@ -403,10 +403,11 @@ $('salvarCidade')?.addEventListener('click',()=>{
 });
 function aplicarPermissoes(){
   const funcionario=currentUser?.papel==='funcionario';
+  const gerenciaAcessos=currentUser?.papel==='admin'||currentUser?.papel==='socio';
   document.querySelector('.dash')?.classList.toggle('hidden',funcionario);
   document.querySelectorAll('.tabs button').forEach(b=>{
     if(funcionario) b.classList.toggle('hidden', b.dataset.t!=='clientes' && b.dataset.t!=='resumo');
-    else if(b.id==='tabVerificacoes'||b.id==='tabCidades') b.classList.remove('hidden');
+    else if(b.id==='tabVerificacoes'||b.id==='tabCidades'||b.id==='tabSocios') b.classList.toggle('hidden', b.id==='tabSocios' && !gerenciaAcessos);
   });
   if(funcionario){
     abrirAba('resumo');

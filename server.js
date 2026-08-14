@@ -97,6 +97,7 @@ function getSession(req) {
 }
 
 function safeUser(u) { return { id: u.id, usuario: u.usuario, nome: u.nome, papel: u.papel, ativo: u.ativo !== false }; }
+function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio'); }
 function timingEqual(a, b) {
   const ab = Buffer.from(String(a));
   const bb = Buffer.from(String(b));
@@ -294,11 +295,11 @@ async function handleApi(req, res) {
     return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
   }
   if (route === '/api/usuarios' && req.method === 'GET') {
-    if (session.user.papel !== 'admin') return json(res, 403, { erro: 'Somente o administrador pode gerenciar acessos.' });
+    if (!podeGerenciarAcessos(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem gerenciar acessos.' });
     return json(res, 200, (await db.readUsers()).map(safeUser));
   }
   if (route === '/api/usuarios' && req.method === 'POST') {
-    if (session.user.papel !== 'admin') return json(res, 403, { erro: 'Somente o administrador pode adicionar usuários.' });
+    if (!podeGerenciarAcessos(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem adicionar usuários.' });
     try {
       const body = await readBody(req, 50 * 1024);
       const usuario = String(body.usuario || '').trim().toLowerCase();
@@ -317,12 +318,13 @@ async function handleApi(req, res) {
     } catch { return json(res, 400, { erro: 'Não foi possível criar o sócio.' }); }
   }
   if (route.startsWith('/api/usuarios/') && req.method === 'PUT') {
-    if (session.user.papel !== 'admin') return json(res, 403, { erro: 'Somente o administrador pode alterar usuários.' });
+    if (!podeGerenciarAcessos(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem alterar usuários.' });
     try {
       const id = decodeURIComponent(route.split('/').pop());
       const body = await readBody(req, 50 * 1024);
       const arr = await db.readUsers(); const u = arr.find(x => x.id === id);
       if (!u) return json(res, 404, { erro: 'Usuário não encontrado.' });
+      if (u.papel === 'admin' && session.user.papel !== 'admin') return json(res, 403, { erro: 'O administrador principal não pode ser alterado.' });
       if (u.papel === 'admin' && body.ativo === false) return json(res, 400, { erro: 'O administrador principal não pode ser desativado.' });
       if (typeof body.nome === 'string' && body.nome.trim().length >= 2) u.nome = body.nome.trim();
       if (typeof body.ativo === 'boolean') u.ativo = body.ativo;
@@ -337,7 +339,7 @@ async function handleApi(req, res) {
   if (route === '/api/data' && req.method === 'GET') {
     const atual = await db.readDb();
     if (session.user.papel === 'funcionario') {
-      return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: [], pagamentos: [] } });
+      return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: [], pagamentos: [], cidades: atual.data.cidades || [] } });
     }
     return json(res, 200, atual);
   }
@@ -347,6 +349,7 @@ async function handleApi(req, res) {
       const data = body.data;
       if (!data || !Array.isArray(data.clientes) || !Array.isArray(data.emprestimos) || !Array.isArray(data.pagamentos)) return json(res, 400, { erro: 'Banco inválido.' });
       const atual = await db.readDb();
+      if (!Array.isArray(data.cidades)) data.cidades = atual.data.cidades || [];
       if (Number(body.revision) !== Number(atual.revision)) return json(res, 409, { erro: 'Outro usuário alterou os dados. Atualize a página antes de salvar.' });
       let dadosSalvar = data;
       if (session.user.papel === 'funcionario') {
@@ -359,7 +362,7 @@ async function handleApi(req, res) {
           if (JSON.stringify(recebido) !== JSON.stringify(antigo)) return json(res, 403, { erro: 'Funcionário não pode alterar clientes já cadastrados.' });
         }
         const novos = data.clientes.filter(c => !idsAtuais.has(c.id)).map(c => ({ ...c, responsavel: session.user.nome || session.user.usuario, usuarioResponsavel: session.user.usuario, papelResponsavel: 'funcionario' }));
-        dadosSalvar = { clientes: [...atual.data.clientes, ...novos], emprestimos: atual.data.emprestimos, pagamentos: atual.data.pagamentos };
+        dadosSalvar = { clientes: [...atual.data.clientes, ...novos], emprestimos: atual.data.emprestimos, pagamentos: atual.data.pagamentos, cidades: atual.data.cidades || [] };
       }
       const next = { revision: Number(atual.revision), data: dadosSalvar, atualizadoEm: new Date().toISOString(), atualizadoPor: session.user.usuario };
       const saved = await db.writeDb(next);
