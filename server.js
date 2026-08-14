@@ -339,7 +339,7 @@ async function handleApi(req, res) {
   if (route === '/api/data' && req.method === 'GET') {
     const atual = await db.readDb();
     if (session.user.papel === 'funcionario') {
-      return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: [], pagamentos: [], cidades: atual.data.cidades || [] } });
+      return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [] } });
     }
     return json(res, 200, atual);
   }
@@ -362,7 +362,19 @@ async function handleApi(req, res) {
           if (JSON.stringify(recebido) !== JSON.stringify(antigo)) return json(res, 403, { erro: 'Funcionário não pode alterar clientes já cadastrados.' });
         }
         const novos = data.clientes.filter(c => !idsAtuais.has(c.id)).map(c => ({ ...c, responsavel: session.user.nome || session.user.usuario, usuarioResponsavel: session.user.usuario, papelResponsavel: 'funcionario' }));
-        dadosSalvar = { clientes: [...atual.data.clientes, ...novos], emprestimos: atual.data.emprestimos, pagamentos: atual.data.pagamentos, cidades: atual.data.cidades || [] };
+        const idsEmp = new Set((atual.data.emprestimos || []).map(e => e.id));
+        const empBody = Array.isArray(data.emprestimos) ? data.emprestimos : [];
+        if (empBody.filter(e => idsEmp.has(e.id)).length !== idsEmp.size) return json(res, 403, { erro: 'Funcionário não pode excluir empréstimos.' });
+        const empPorId = new Map(empBody.map(e => [e.id, e]));
+        const novosEmp = empBody.filter(e => !idsEmp.has(e.id));
+        const idsClientes = new Set([...atual.data.clientes, ...novos].map(c => c.id));
+        if (novosEmp.some(e => !idsClientes.has(e.clienteId))) return json(res, 400, { erro: 'Empréstimo sem cliente válido.' });
+        const emprestimosFinais = (atual.data.emprestimos || []).map(antigo => empPorId.get(antigo.id) || antigo).concat(novosEmp);
+        const idsPag = new Set((atual.data.pagamentos || []).map(p => p.id));
+        const pagBody = Array.isArray(data.pagamentos) ? data.pagamentos : [];
+        if (pagBody.filter(p => idsPag.has(p.id)).length !== idsPag.size) return json(res, 403, { erro: 'Funcionário não pode excluir pagamentos.' });
+        const novosPag = pagBody.filter(p => !idsPag.has(p.id));
+        dadosSalvar = { clientes: [...atual.data.clientes, ...novos], emprestimos: emprestimosFinais, pagamentos: [...(atual.data.pagamentos || []), ...novosPag], cidades: atual.data.cidades || [] };
       }
       const next = { revision: Number(atual.revision), data: dadosSalvar, atualizadoEm: new Date().toISOString(), atualizadoPor: session.user.usuario };
       const saved = await db.writeDb(next);
