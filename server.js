@@ -352,11 +352,16 @@ async function handleApi(req, res) {
   }
 
   if (route === '/api/data' && req.method === 'GET') {
-    const atual = await db.readDb();
-    if (session.user.papel === 'funcionario') {
-      return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [] } });
+    try {
+      const atual = await db.readDb();
+      if (session.user.papel === 'funcionario') {
+        return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [] } });
+      }
+      return json(res, 200, atual);
+    } catch (e) {
+      console.error('GET /api/data', e);
+      return json(res, 500, { erro: 'Falha ao ler os dados no banco.', detalhe: e.message || String(e) });
     }
-    return json(res, 200, atual);
   }
   if (route === '/api/data' && req.method === 'PUT') {
     try {
