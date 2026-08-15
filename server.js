@@ -365,18 +365,19 @@ async function handleApi(req, res) {
         }).concat(novos);
         const idsEmp = new Set((atual.data.emprestimos || []).map(e => e.id));
         const empBody = Array.isArray(data.emprestimos) ? data.emprestimos : [];
-        if (empBody.filter(e => idsEmp.has(e.id)).length !== idsEmp.size) return json(res, 403, { erro: 'Funcionário não pode excluir empréstimos.' });
         const empPorId = new Map(empBody.map(e => [e.id, e]));
         const novosEmp = empBody.filter(e => !idsEmp.has(e.id));
         const idsClientes = new Set(clientesFinais.map(c => c.id));
         if (novosEmp.some(e => !idsClientes.has(e.clienteId))) return json(res, 400, { erro: 'Empréstimo sem cliente válido.' });
-        const emprestimosFinais = (atual.data.emprestimos || []).map(antigo => empPorId.get(antigo.id) || antigo).concat(novosEmp);
+        const idsEmpBody = new Set(empBody.map(e => e.id));
+        const emprestimosFinais = (atual.data.emprestimos || []).filter(antigo => idsEmpBody.has(antigo.id)).map(antigo => empPorId.get(antigo.id) || antigo).concat(novosEmp);
         const idsPag = new Set((atual.data.pagamentos || []).map(p => p.id));
         const pagBody = Array.isArray(data.pagamentos) ? data.pagamentos : [];
-        if (pagBody.filter(p => idsPag.has(p.id)).length !== idsPag.size) return json(res, 403, { erro: 'Funcionário não pode excluir pagamentos.' });
         const pagPorId = new Map(pagBody.map(p => [p.id, p]));
         const novosPag = pagBody.filter(p => !idsPag.has(p.id));
-        const pagamentosFinais = (atual.data.pagamentos || []).map(antigo => pagPorId.get(antigo.id) || antigo).concat(novosPag);
+        const idsEmpOk = new Set(emprestimosFinais.map(e => e.id));
+        const idsPagBody = new Set(pagBody.map(p => p.id));
+        const pagamentosFinais = (atual.data.pagamentos || []).filter(antigo => idsPagBody.has(antigo.id) && idsEmpOk.has(antigo.empId)).map(antigo => pagPorId.get(antigo.id) || antigo).concat(novosPag.filter(p => idsEmpOk.has(p.empId)));
         dadosSalvar = { clientes: clientesFinais, emprestimos: emprestimosFinais, pagamentos: pagamentosFinais, cidades: atual.data.cidades || [] };
       }
       const next = { revision: Number(atual.revision), data: dadosSalvar, atualizadoEm: new Date().toISOString(), atualizadoPor: session.user.usuario };
