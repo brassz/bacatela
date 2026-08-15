@@ -58,8 +58,19 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const nome=id=>db.clientes.find(c=>c.id===id)?.nome||'Cliente removido';
 function syncMsg(t){if($('syncStatus'))$('syncStatus').textContent=t}
 async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(r.status===401)throw new Error('AUTH');const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.erro||'Erro no servidor');return body}
+function uniqueById(arr){
+  const m=new Map();
+  for(const x of arr||[]){
+    if(!x||x.id==null||x.id==='')continue;
+    m.set(String(x.id),Object.assign({},x,{id:String(x.id)}));
+  }
+  return [...m.values()];
+}
 function save(){
   clearTimeout(saveTimer);
+  db.emprestimos=uniqueById(db.emprestimos);
+  db.clientes=uniqueById(db.clientes);
+  db.pagamentos=uniqueById(db.pagamentos);
   const data={clientes:db.clientes,emprestimos:db.emprestimos,pagamentos:db.pagamentos,cidades:db.cidades||[]};
   const rev=serverRevision;
   syncMsg('Salvando...');
@@ -77,6 +88,11 @@ async function load(){
   db=x.data&&x.data.clientes?x.data:JSON.parse(JSON.stringify(BACKUP_INICIAL));
   if(!Array.isArray(db.cidades)) db.cidades=[];
   if(!Array.isArray(db.clientes)) db.clientes=[];
+  if(!Array.isArray(db.emprestimos)) db.emprestimos=[];
+  if(!Array.isArray(db.pagamentos)) db.pagamentos=[];
+  db.clientes=uniqueById(db.clientes);
+  db.emprestimos=uniqueById(db.emprestimos);
+  db.pagamentos=uniqueById(db.pagamentos);
   garantirCidades();
   (db.emprestimos||[]).forEach(e=>{
     if(!Array.isArray(e.parcelas)) e.parcelas=[];
@@ -396,17 +412,23 @@ window.editarEmp=id=>{
 };
 $('limparEmp')?.addEventListener('click',limparEmp);
 $('salvarEmp').onclick=()=>{
-  const cid=$('eCliente').value,p=+$('ePrincipal').value,t=+$('eTotal').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;
-  if(!cid||p<=0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha todos os dados corretamente.');
-  const idEdit=String(($('eEditId')&&$('eEditId').value)||editEmp||'');
-  if(idEdit){
-    const e=acharEmp(idEdit);
-    if(!e)return alert('Não foi possível editar: empréstimo não encontrado. Atualize a página.');
-    e.clienteId=cid;e.principal=p;e.total=t;e.freq=f;e.primeiroVencimento=d;e.parcelas=montarParcelas(t,q,d,f,e.parcelas);
-    limparEmp();render();alert('Empréstimo atualizado.');return;
-  }
-  db.emprestimos.push({id:uid(),clienteId:cid,principal:p,total:t,freq:f,primeiroVencimento:d,parcelas:montarParcelas(t,q,d,f),criadoEm:hoje(),pasta:'ativo'});
-  $('ePrincipal').value='';$('eTotal').value='';render();alert(`Empréstimo criado. Primeiro vencimento: ${dataBR(d)}`);
+  if($('salvarEmp').dataset.busy==='1')return;
+  $('salvarEmp').dataset.busy='1';
+  try{
+    const cid=$('eCliente').value,p=+$('ePrincipal').value,t=+$('eTotal').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;
+    if(!cid||p<=0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha todos os dados corretamente.');
+    const idEdit=String(($('eEditId')&&$('eEditId').value)||editEmp||'');
+    if(idEdit){
+      const e=acharEmp(idEdit);
+      if(!e)return alert('Não foi possível editar: empréstimo não encontrado. Atualize a página.');
+      e.clienteId=cid;e.principal=p;e.total=t;e.freq=f;e.primeiroVencimento=d;e.parcelas=montarParcelas(t,q,d,f,e.parcelas);
+      limparEmp();render();alert('Empréstimo atualizado.');return;
+    }
+    const novo={id:uid(),clienteId:cid,principal:p,total:t,freq:f,primeiroVencimento:d,parcelas:montarParcelas(t,q,d,f),criadoEm:hoje(),pasta:'ativo'};
+    if(acharEmp(novo.id))return;
+    db.emprestimos=uniqueById(db.emprestimos.concat([novo]));
+    $('ePrincipal').value='';$('eTotal').value='';render();alert(`Empréstimo criado. Primeiro vencimento: ${dataBR(d)}`);
+  }finally{$('salvarEmp').dataset.busy='';}
 };
 window.excluirEmp=id=>{
   const e=acharEmp(id);if(!e)return;

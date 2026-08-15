@@ -97,6 +97,14 @@ function getSession(req) {
 }
 
 function safeUser(u) { return { id: u.id, usuario: u.usuario, nome: u.nome, papel: u.papel, ativo: u.ativo !== false }; }
+function uniqueById(arr) {
+  const m = new Map();
+  for (const x of arr || []) {
+    if (!x || x.id == null || x.id === '') continue;
+    m.set(String(x.id), Object.assign({}, x, { id: String(x.id) }));
+  }
+  return Array.from(m.values());
+}
 function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio'); }
 function timingEqual(a, b) {
   const ab = Buffer.from(String(a));
@@ -348,6 +356,10 @@ async function handleApi(req, res) {
       const body = await readBody(req);
       const data = body.data;
       if (!data || !Array.isArray(data.clientes) || !Array.isArray(data.emprestimos) || !Array.isArray(data.pagamentos)) return json(res, 400, { erro: 'Banco inválido.' });
+      data.clientes = uniqueById(data.clientes);
+      data.emprestimos = uniqueById(data.emprestimos);
+      data.pagamentos = uniqueById(data.pagamentos);
+      if (Array.isArray(data.cidades)) data.cidades = uniqueById(data.cidades);
       const atual = await db.readDb();
       if (!Array.isArray(data.cidades)) data.cidades = atual.data.cidades || [];
       if (Number(body.revision) !== Number(atual.revision)) return json(res, 409, { erro: 'Outro usuário alterou os dados. Atualize a página antes de salvar.' });
@@ -363,14 +375,19 @@ async function handleApi(req, res) {
           if (!recebido) return antigo;
           return { ...recebido, id: antigo.id, responsavel: antigo.responsavel, usuarioResponsavel: antigo.usuarioResponsavel, papelResponsavel: antigo.papelResponsavel, criadoEm: antigo.criadoEm, criadoHora: antigo.criadoHora, cidadeId: antigo.cidadeId, unidade: antigo.unidade };
         }).concat(novos);
-        const idsEmp = new Set((atual.data.emprestimos || []).map(e => e.id));
-        const empBody = Array.isArray(data.emprestimos) ? data.emprestimos : [];
-        const empPorId = new Map(empBody.map(e => [e.id, e]));
-        const novosEmp = empBody.filter(e => !idsEmp.has(e.id));
-        const idsClientes = new Set(clientesFinais.map(c => c.id));
-        if (novosEmp.some(e => !idsClientes.has(e.clienteId))) return json(res, 400, { erro: 'Empréstimo sem cliente válido.' });
-        const idsEmpBody = new Set(empBody.map(e => e.id));
-        const emprestimosFinais = (atual.data.emprestimos || []).filter(antigo => idsEmpBody.has(antigo.id)).map(antigo => empPorId.get(antigo.id) || antigo).concat(novosEmp);
+        const idsEmp = new Set((atual.data.emprestimos || []).map(e => String(e.id)));
+        const empBody = uniqueById(data.emprestimos);
+        const empPorId = new Map(empBody.map(e => [String(e.id), e]));
+        const novosEmp = empBody.filter(e => !idsEmp.has(String(e.id)));
+        const idsClientes = new Set(clientesFinais.map(c => String(c.id)));
+        if (novosEmp.some(e => !idsClientes.has(String(e.clienteId)))) return json(res, 400, { erro: 'Empréstimo sem cliente válido.' });
+        const idsEmpBody = new Set(empBody.map(e => String(e.id)));
+        const emprestimosFinais = uniqueById(
+          (atual.data.emprestimos || [])
+            .filter(antigo => idsEmpBody.has(String(antigo.id)))
+            .map(antigo => empPorId.get(String(antigo.id)) || antigo)
+            .concat(novosEmp)
+        );
         const idsPag = new Set((atual.data.pagamentos || []).map(p => p.id));
         const pagBody = Array.isArray(data.pagamentos) ? data.pagamentos : [];
         const pagPorId = new Map(pagBody.map(p => [p.id, p]));
