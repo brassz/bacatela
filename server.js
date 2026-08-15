@@ -299,6 +299,13 @@ async function handleApi(req, res) {
   if (!session) return json(res, 401, { erro: 'Sessão encerrada.' });
 
   if (route === '/api/me' && req.method === 'GET') return json(res, 200, session.user);
+  if (route === '/api/revision' && req.method === 'GET') {
+    try {
+      return json(res, 200, { revision: await db.readRevision() });
+    } catch (e) {
+      return json(res, 500, { erro: e.message || 'Falha ao ler revisão.' });
+    }
+  }
   if (route === '/api/logout' && req.method === 'POST') {
     return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
   }

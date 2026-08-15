@@ -79,7 +79,13 @@ function save(){
       const r=await api('/api/data',{method:'PUT',body:JSON.stringify({data,revision:rev})});
       serverRevision=r.revision;
       syncMsg('Dados salvos online');
-    }catch(e){syncMsg(e.message==='AUTH'?'Sessão encerrada':'Falha ao salvar — tente novamente')}
+    }catch(e){
+      if(String(e.message||'').includes('Outro usuário')){
+        try{await load();render(true);syncMsg('Outro usuário alterou os dados. Tela atualizada.');}catch{}
+        return;
+      }
+      syncMsg(e.message==='AUTH'?'Sessão encerrada':'Falha ao salvar — tente novamente');
+    }
   },180);
 }
 async function load(){
@@ -274,7 +280,7 @@ function renderSaude(){
  if($('saudeResumo')) $('saudeResumo').innerHTML=`<div class="m"><small>Clientes cadastrados</small><b>${clientes}</b></div><div class="m"><small>Clientes ativos</small><b>${clientesAtivos}</b></div><div class="m"><small>Clientes em atraso</small><b>${clientesAtrasados}</b></div><div class="m"><small>Empréstimos ativos</small><b>${emprestimosAtivos}</b></div><div class="m"><small>Parcelas vencidas</small><b>${parcelasVencidas}</b></div><div class="m"><small>Taxa de atraso</small><b>${(taxaAtraso*100).toFixed(1).replace('.',',')}%</b></div><div class="m"><small>Total recebido</small><b>${brl(recebido)}</b></div><div class="m"><small>Valor vencido</small><b>${brl(vencido)}</b></div>`;
  if($('saudeAnalise')) $('saudeAnalise').innerHTML=`<h3>Análise</h3>${motivos.map(m=>`<div class="notice ${nivel==='RUIM'?'late':''}">${esc(m)}</div>`).join('')}<p class="small">Critério: Ótima = menos de 15% dos clientes ativos em atraso; Boa = entre 15% e 35% ou alguns vencimentos acumulados; Ruim = 35% ou mais dos clientes ativos em atraso, ou combinação de muitos vencimentos e inadimplência.</p>`;
 }
-function render(){save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dTot').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.total),0));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dSal').textContent=brl(db.emprestimos.reduce((a,e)=>a+saldo(e),0));$('dLucro').textContent=brl(db.emprestimos.reduce((a,e)=>a+Math.max(0,Number(e.total)-Number(e.principal)),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);let pend=[];db.emprestimos.forEach(e=>e.parcelas.forEach(p=>{const r=restanteParcela(e,p);if(r>.009)pend.push({e,p,r})}));pend.sort((a,b)=>a.p.data.localeCompare(b.p.data));$('alerts').innerHTML=pend.length?pend.slice(0,30).map(x=>`<div class="notice ${x.p.data<=hoje()?'late':''}"><b>${esc(nome(x.e.clienteId))}</b> — Parcela ${x.p.n} — ${dataBR(x.p.data)} — ${brl(x.r)} ${x.p.data<=hoje()?`<b>VENCIDA</b> <button class="green" onclick="pagoRenovar('${x.e.id}')">✅ Marcar pago</button> <button class="green" onclick="cobrarWhatsApp('${x.e.id}')">💬 Cobrar no WhatsApp</button>`:'pendente'}</div>`).join(''):'Nenhum vencimento pendente.';renderClientes();opts();renderEmp();renderPag();renderMultas();renderSaude();renderResumoListas();if(clienteHistorico)renderHistorico(clienteHistorico)}); }
+function render(skipSave){if(!skipSave)save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dTot').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.total),0));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dSal').textContent=brl(db.emprestimos.reduce((a,e)=>a+saldo(e),0));$('dLucro').textContent=brl(db.emprestimos.reduce((a,e)=>a+Math.max(0,Number(e.total)-Number(e.principal)),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);let pend=[];db.emprestimos.forEach(e=>e.parcelas.forEach(p=>{const r=restanteParcela(e,p);if(r>.009)pend.push({e,p,r})}));pend.sort((a,b)=>a.p.data.localeCompare(b.p.data));$('alerts').innerHTML=pend.length?pend.slice(0,30).map(x=>`<div class="notice ${x.p.data<=hoje()?'late':''}"><b>${esc(nome(x.e.clienteId))}</b> — Parcela ${x.p.n} — ${dataBR(x.p.data)} — ${brl(x.r)} ${x.p.data<=hoje()?`<b>VENCIDA</b> <button class="green" onclick="pagoRenovar('${x.e.id}')">✅ Marcar pago</button> <button class="green" onclick="cobrarWhatsApp('${x.e.id}')">💬 Cobrar no WhatsApp</button>`:'pendente'}</div>`).join(''):'Nenhum vencimento pendente.';renderClientes();opts();renderEmp();renderPag();renderMultas();renderSaude();renderResumoListas();if(clienteHistorico)renderHistorico(clienteHistorico)}); }
 function renderClientes(){
   const q=$('buscaCliente').value.toLowerCase();
   const lista=[...db.clientes].filter(c=>(c.nome+c.tel+c.doc).toLowerCase().includes(q)).sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')||a.nome.localeCompare(b.nome,'pt-BR'));
@@ -606,9 +612,38 @@ function aplicarPermissoes(){
     if($('historicoCliente'))$('historicoCliente').classList.add('hidden');
   }
 }
-async function iniciar(){try{currentUser=await api('/api/me');$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginScreen').classList.remove('hidden')}}
-$('entrarSistema').onclick=async()=>{const usuario=$('loginUsuario').value.trim(),senha=$('loginSenha').value;$('loginErro').textContent='';try{currentUser=await api('/api/login',{method:'POST',body:JSON.stringify({usuario,senha})});$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginErro').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
+let syncTimer=null,syncBusy=false;
+function pararSync(){if(syncTimer){clearInterval(syncTimer);syncTimer=null}}
+async function puxarAtualizacoes(){
+  if(!currentUser||syncBusy||saveTimer)return;
+  try{
+    syncBusy=true;
+    const r=await api('/api/revision');
+    const rev=Number(r.revision||0);
+    if(rev!==Number(serverRevision)){
+      const keepEmp=$('eEditId')&&$('eEditId').value;
+      const keepCli=editCliente,keepPag=editPag;
+      await load();
+      render(true);
+      await renderUsuarios();
+      await renderVerificacoes();
+      if(keepEmp&&acharEmp(keepEmp)){editEmp=String(keepEmp);if($('eEditId'))$('eEditId').value=String(keepEmp);}
+      editCliente=keepCli;editPag=keepPag;
+      syncMsg('Atualizado com as alterações de outros usuários');
+    }
+  }catch(e){
+    if(e.message==='AUTH'){pararSync();currentUser=null;$('loginScreen').classList.remove('hidden');}
+  }finally{syncBusy=false}
+}
+function iniciarSync(){
+  pararSync();
+  syncTimer=setInterval(puxarAtualizacoes,2500);
+  puxarAtualizacoes();
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)puxarAtualizacoes()});
+async function iniciar(){try{currentUser=await api('/api/me');$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();iniciarSync();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginScreen').classList.remove('hidden')}}
+$('entrarSistema').onclick=async()=>{const usuario=$('loginUsuario').value.trim(),senha=$('loginSenha').value;$('loginErro').textContent='';try{currentUser=await api('/api/login',{method:'POST',body:JSON.stringify({usuario,senha})});$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();$('loginScreen').classList.add('hidden');aplicarPermissoes();render();await renderUsuarios();await renderVerificacoes();iniciarSync();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginErro').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
 $('loginSenha').addEventListener('keydown',e=>{if(e.key==='Enter')$('entrarSistema').click()});
-$('sairSistema').onclick=async()=>{try{await api('/api/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;$('loginSenha').value='';$('loginScreen').classList.remove('hidden')};
+$('sairSistema').onclick=async()=>{pararSync();try{await api('/api/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;$('loginSenha').value='';$('loginScreen').classList.remove('hidden')};
 iniciar();
 </script></body></html>
