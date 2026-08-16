@@ -377,13 +377,13 @@ async function handleApi(req, res) {
       if (Number(body.revision) !== Number(atual.revision)) return json(res, 409, { erro: 'Outro usuário alterou os dados. Atualize a página antes de salvar.' });
       let dadosSalvar = data;
       if (session.user.papel === 'funcionario') {
-        const idsAtuais = new Set(atual.data.clientes.map(c => c.id));
-        const existentesBody = data.clientes.filter(c => idsAtuais.has(c.id));
+        const idsAtuais = new Set(atual.data.clientes.map(c => String(c.id)));
+        const existentesBody = data.clientes.filter(c => idsAtuais.has(String(c.id)));
         if (existentesBody.length !== atual.data.clientes.length) return json(res, 403, { erro: 'Funcionário não pode excluir clientes.' });
-        const porId = new Map(data.clientes.map(c => [c.id, c]));
-        const novos = data.clientes.filter(c => !idsAtuais.has(c.id)).map(c => ({ ...c, responsavel: session.user.nome || session.user.usuario, usuarioResponsavel: session.user.usuario, papelResponsavel: 'funcionario' }));
+        const porId = new Map(data.clientes.map(c => [String(c.id), c]));
+        const novos = data.clientes.filter(c => !idsAtuais.has(String(c.id))).map(c => ({ ...c, responsavel: session.user.nome || session.user.usuario, usuarioResponsavel: session.user.usuario, papelResponsavel: 'funcionario' }));
         const clientesFinais = atual.data.clientes.map(antigo => {
-          const recebido = porId.get(antigo.id);
+          const recebido = porId.get(String(antigo.id));
           if (!recebido) return antigo;
           return { ...recebido, id: antigo.id, responsavel: antigo.responsavel, usuarioResponsavel: antigo.usuarioResponsavel, papelResponsavel: antigo.papelResponsavel, criadoEm: antigo.criadoEm, criadoHora: antigo.criadoHora, cidadeId: antigo.cidadeId, unidade: antigo.unidade };
         }).concat(novos);

@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_emprestimos (
   renovado_em DATE
 );
 
+ALTER TABLE public.gestaoemprestimosalex_emprestimos ADD COLUMN IF NOT EXISTS pasta TEXT;
+ALTER TABLE public.gestaoemprestimosalex_emprestimos ADD COLUMN IF NOT EXISTS historico JSONB;
+
 CREATE INDEX IF NOT EXISTS gestaoemprestimosalex_emprestimos_cliente_idx
   ON public.gestaoemprestimosalex_emprestimos (cliente_id);
 
