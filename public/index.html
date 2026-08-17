@@ -20,13 +20,13 @@
 <div id="loginScreen" class="login-screen"><div class="login-box"><h1>🔐 Empréstimos — Imperatriz/MA</h1><p class="small">Entre com seu usuário e senha para acessar os cadastros online.</p><label>Usuário</label><input id="loginUsuario" autocomplete="username"><label>Senha</label><input id="loginSenha" type="password" autocomplete="current-password"><div class="actions"><button id="entrarSistema">Entrar</button></div><div id="loginErro" class="error"></div></div></div>
 <main class="app hidden" id="appPrincipal">
 <h1>💼 Gestão de Empréstimos</h1><p class="small" id="subtituloApp">Selecione a cidade no Resumo para ver e cadastrar clientes daquela unidade — os dados não se misturam.</p><div class="userbar"><div><b id="usuarioLogado">Usuário</b><div class="sync" id="syncStatus">Conectando ao servidor...</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="margin:0">Cidade</label><select id="cidadeTopo" style="width:auto;min-width:180px"></select><button class="gray" id="sairSistema">Sair</button></div></div>
-<section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Total a receber</small><b id="dTot">R$ 0,00</b></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Saldo a receber</small><b id="dSal">R$ 0,00</b></div><div class="m"><small>Juros / lucro previsto</small><b id="dLucro">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
+<section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Saldo dos contratos</small><b id="dTot">R$ 0,00</b></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Saldo a receber</small><b id="dSal">R$ 0,00</b></div><div class="m"><small>Juros previstos</small><b id="dLucro">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
 <div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="pagamentos">Pagamentos</button><button data-t="historico">Histórico</button><button data-t="multas">Multa</button><button data-t="saude">Saúde da Empresa</button><button data-t="backup">Backup</button><button id="tabCidades" data-t="cidades">Cidades</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
 <section id="resumo" class="sec active"><div class="card"><h2>Cidade em visualização</h2><p class="small">Escolha a cidade. Clientes, empréstimos, pagamentos e o resumo passam a mostrar somente essa cidade.</p><label>Cidade</label><select id="cidadeResumo"></select><div id="cidadeAviso" class="notice" style="margin-top:12px"></div></div><div class="summary-grid" id="resumoContadores" style="margin:12px 0"></div><div class="card"><h2>📅 Vencem hoje</h2><div id="listaHoje" class="empty">Nenhum empréstimo vence hoje.</div></div><div class="card"><h2>⚠️ Vencidos</h2><div id="listaVencidos" class="empty">Nenhum empréstimo vencido.</div></div><div class="card"><h2>✅ Ativos</h2><div id="listaAtivos" class="empty">Nenhum empréstimo ativo.</div></div><div class="card"><h2>Vencimentos e avisos</h2><div id="alerts">Nenhum vencimento.</div></div></section>
 <section id="cidades" class="sec"><div class="card"><h2>🏙️ Cidades</h2><p class="small">Cadastre as cidades da operação. Cada cliente fica preso à cidade em que foi criado.</p><div class="grid"><div><label>Nome da cidade</label><input id="cidNome" placeholder="Ex.: São Paulo"></div></div><div class="actions"><button id="salvarCidade">Adicionar cidade</button></div></div><div class="card"><h2>Cidades cadastradas</h2><div class="table"><table><thead><tr><th>Cidade</th><th>Clientes</th><th>Ações</th></tr></thead><tbody id="tbCidades"></tbody></table></div></div></section>
 <section id="saude" class="sec"><div class="card"><h2>📊 Saúde da Empresa</h2><div id="saudeStatus" class="notice">Calculando...</div><div id="saudeResumo" class="summary-grid"></div><div id="saudeAnalise"></div></div></section>
 <section id="clientes" class="sec"><div class="card"><h2>Cadastro de cliente</h2><div class="grid"><div><label>Nome</label><input id="cNome"></div><div><label>Telefone</label><input id="cTel"></div><div><label>Documento</label><input id="cDoc"></div><div><label>Endereço</label><input id="cEnd"></div></div><label>Observações</label><textarea id="cObs"></textarea><div class="actions"><button id="salvarCliente">Salvar cliente</button><button class="gray" id="limparCliente">Cancelar edição</button></div></div><div class="card"><input id="buscaCliente" placeholder="Pesquisar cliente"><div class="table"><table><thead><tr><th>Data de cadastro</th><th>Nome</th><th>Telefone</th><th>Documento</th><th>Responsável</th><th>Empréstimos</th><th>Ações</th></tr></thead><tbody id="tbClientes"></tbody></table></div><div class="paginacao" id="pagClientes"></div></div><div id="historicoCliente" class="card hidden"><div class="history-head"><div><h2 id="histTitulo">Empréstimos do cliente</h2><div id="histContato"></div></div><div class="actions"><button class="green" id="compartilharHistorico">📤 Enviar histórico</button><button class="gray" id="fecharHistorico">Fechar</button></div></div><div id="histResumo" class="summary-grid"></div><div id="histLista"></div></div></section>
-<section id="emprestimos" class="sec"><div class="card"><h2 id="empFormTitulo">Novo empréstimo</h2><div class="grid"><div><label>Cliente</label><select id="eCliente"></select></div><div><label>Valor emprestado</label><input id="ePrincipal" type="number" step="0.01"></div><div><label>Total a receber</label><input id="eTotal" type="number" step="0.01"></div><div><label>Frequência</label><select id="eFreq"><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="daily">Diário (30 dias)</option></select></div><div><label>Número de parcelas</label><input id="eQtd" type="number" min="1" value="4"></div><div><label>Primeiro vencimento</label><input id="eData" type="date"></div></div><p class="small">A data é salva exatamente como foi escolhida, sem conversão de fuso horário.</p><div class="actions"><button type="button" id="salvarEmp">Criar empréstimo</button><button type="button" class="gray" id="limparEmp">Cancelar edição</button></div><input type="hidden" id="eEditId" value=""></div><div class="card"><div class="subtabs" id="empSubtabs"><button class="active" data-emp-tab="ativo">Empréstimos Ativos</button><button data-emp-tab="negociado">Empréstimos Negociados</button><button data-emp-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="empAbaHint">Empréstimos em andamento. Use Negociado ou Complicado para organizar a carteira.</p><div class="grid"><div><label>Filtrar empréstimos por cliente</label><select id="filtroEmpCliente"><option value="">Todos os clientes</option></select></div><div><label>Filtrar por frequência</label><select id="filtroEmpFreq"><option value="">Todas as frequências</option><option value="daily">Somente diários</option><option value="weekly">Somente semanais</option><option value="monthly">Somente mensais</option></select></div></div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 12px"><div style="flex:1;min-width:220px"><label>Buscar por cliente</label><input id="buscaEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaEmp">Buscar</button><button type="button" class="gray" id="limparBuscaEmp">Limpar</button></div><div class="table"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Emprestado</th><th>Total</th><th>Recebido</th><th>Saldo</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbEmp"></tbody></table></div><div class="paginacao" id="pagEmp"></div></div></section>
+<section id="emprestimos" class="sec"><div class="card"><h2 id="empFormTitulo">Novo empréstimo</h2><div class="grid"><div><label>Cliente</label><select id="eCliente"></select></div><div><label>Valor emprestado</label><input id="ePrincipal" type="number" step="0.01"></div><div><label>Juros</label><input id="eJuros" type="number" step="0.01" min="0"></div><div><label>Frequência</label><select id="eFreq"><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="daily">Diário (30 dias)</option></select></div><div><label>Número de parcelas</label><input id="eQtd" type="number" min="1" value="4"></div><div><label>Primeiro vencimento</label><input id="eData" type="date"></div></div><p class="small" id="eSaldoContrato">Saldo do contrato: R$ 0,00 (emprestado + juros)</p><p class="small">A data é salva exatamente como foi escolhida, sem conversão de fuso horário.</p><div class="actions"><button type="button" id="salvarEmp">Criar empréstimo</button><button type="button" class="gray" id="limparEmp">Cancelar edição</button></div><input type="hidden" id="eEditId" value=""></div><div class="card"><div class="subtabs" id="empSubtabs"><button class="active" data-emp-tab="ativo">Empréstimos Ativos</button><button data-emp-tab="negociado">Empréstimos Negociados</button><button data-emp-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="empAbaHint">Empréstimos em andamento. Use Negociado ou Complicado para organizar a carteira.</p><div class="grid"><div><label>Filtrar empréstimos por cliente</label><select id="filtroEmpCliente"><option value="">Todos os clientes</option></select></div><div><label>Filtrar por frequência</label><select id="filtroEmpFreq"><option value="">Todas as frequências</option><option value="daily">Somente diários</option><option value="weekly">Somente semanais</option><option value="monthly">Somente mensais</option></select></div></div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 12px"><div style="flex:1;min-width:220px"><label>Buscar por cliente</label><input id="buscaEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaEmp">Buscar</button><button type="button" class="gray" id="limparBuscaEmp">Limpar</button></div><div class="table"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Emprestado</th><th>Juros</th><th>Recebido</th><th>Saldo</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbEmp"></tbody></table></div><div class="paginacao" id="pagEmp"></div></div></section>
 <section id="historico" class="sec"><div class="card"><h2>📜 Histórico de empréstimos</h2><p class="small">Mostra o acordo original, pagamentos já feitos e as fases de negociação ou complicado. Os valores atuais ficam nas abas Ativos / Negociados / Complicados.</p><div class="grid"><div><label>Filtrar por cliente</label><select id="histFiltroCliente"><option value="">Todos os clientes</option></select></div></div></div><div id="histPagina"></div></section>
 <section id="pagamentos" class="sec"><div class="card"><h2 id="pagFormTitulo">Registrar pagamento</h2><p class="small">O empréstimo só será marcado como quitado quando todas as parcelas, inclusive a taxa/juros incluída no total, estiverem pagas. Pagamentos acima do valor restante da parcela são bloqueados. Use “Quitar” para liquidar todo o saldo ou “Continuar” para renovar os vencimentos pendentes.</p><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button><button class="gray" id="limparPag">Cancelar edição</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
 <section id="multas" class="sec"><div class="card"><h2>💸 Multas</h2><p class="small">Multas lançadas ao registrar pagamento, somente da cidade selecionada.</p><div class="m" style="max-width:280px"><small>Total de multas</small><b id="totalMultas">R$ 0,00</b></div></div><div class="card"><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbMultas"></tbody></table></div></div></section>
@@ -312,7 +312,13 @@ function pagoEmp(id){return db.pagamentos.filter(p=>String(p.empId)===String(id)
 function ehRenovacao(p){return p&&((p.tipo==='renovacao_taxa')||(p.tipo==='renovacao_juros')||(p.tipo==='multa')||(p.forma==='Pagamento confirmado'&&String(p.obs||'').includes('Pago pelo botão Pago / Próximo vencimento'))||(p.forma==='Pagamento confirmado'&&String(p.obs||'').includes('vencimento renovado sem quitação')))}
 function pagoParc(eid,pid){return db.pagamentos.filter(p=>p.empId===eid&&p.parcId===pid&&!ehRenovacao(p)).reduce((a,p)=>a+Number(p.valor),0)}
 function restanteParcela(e,p){return Math.max(0,Number(p.valor)-pagoParc(e.id,p.id))}
+function jurosEmp(e){return Math.max(0,+(Number(e.total||0)-Number(e.principal||0)).toFixed(2))}
+function saldoContrato(e){return +(Number(e.principal||0)+jurosEmp(e)).toFixed(2)}
 function saldo(e){return (e.parcelas||[]).reduce((total,p)=>total+restanteParcela(e,p),0)}
+function atualizarSaldoContratoForm(){
+  const p=+$('ePrincipal').value||0,j=+$('eJuros').value||0;
+  if($('eSaldoContrato'))$('eSaldoContrato').textContent='Saldo do contrato: '+brl(p+j)+' (emprestado '+brl(p)+' + juros '+brl(j)+')';
+}
 function valorVencido(e){return e.parcelas.filter(p=>p.data<=hoje()).reduce((a,p)=>a+restanteParcela(e,p),0)}
 function primeiroPendente(e){return (e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.data.localeCompare(b.data))[0]}
 function dataProxVenc(e){
@@ -456,12 +462,12 @@ function htmlFaseHistorico(titulo,fase,opts){
     }).join(''):'<tr><td colspan="4" class="empty">Sem parcelas no acordo antigo.</td></tr>';
     return `<div class="loan-box fechado"><div class="loan-title"><h3>${esc(titulo)}</h3><div><span class="badge fechado">Fechado</span></div></div>
       <p class="small">Empréstimo anterior — como estava antes da negociação${fase.em?(' (fechado em '+dataBR(fase.em)+')'):''} • ${rotuloFreq(fase.freq)}</p>
-      <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Total:</b> ${brl(fase.total)} &nbsp; <b>Recebido:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo ao fechar:</b> ${brl(fase.saldo||0)}</p>
+      <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Juros:</b> ${brl(Math.max(0,Number(fase.total||0)-Number(fase.principal||0)))} &nbsp; <b>Saldo do contrato:</b> ${brl(fase.total)} &nbsp; <b>Recebido:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo ao fechar:</b> ${brl(fase.saldo||0)}</p>
       <div class="table"><table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div></div>`;
   }
   return `<div class="loan-box"><div class="loan-title"><h3>${esc(titulo)}</h3><div>${fase.pasta==='negociado'?'<span class="badge open">Negociado</span>':fase.pasta==='complicado'?'<span class="badge late">Complicado</span>':'<span class="badge open">Ativo</span>'}</div></div>
     <p class="small">${fase.em?('Registrado em '+dataBR(fase.em)+' • '):''}${rotuloFreq(fase.freq)}</p>
-    <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Total do acordo:</b> ${brl(fase.total)} &nbsp; <b>Recebido nesta fase:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo:</b> ${brl(fase.saldo||0)}</p>
+    <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Juros:</b> ${brl(Math.max(0,Number(fase.total||0)-Number(fase.principal||0)))} &nbsp; <b>Saldo do contrato:</b> ${brl(fase.total)} &nbsp; <b>Recebido nesta fase:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo:</b> ${brl(fase.saldo||0)}</p>
     <div class="table"><table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Pago</th></tr></thead><tbody>${pars.length?pars.map(p=>`<tr><td>${p.n}</td><td>${dataBR(p.data)}</td><td>${brl(p.valor)}</td><td>${brl(pagoDe(p.id))}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">Sem parcelas.</td></tr>'}</tbody></table></div></div>`;
 }
 window.moverEmpPasta=(id,pasta)=>{
@@ -628,7 +634,7 @@ function renderEmp(){
   const q=($('buscaEmp')&&$('buscaEmp').value||'').trim();
   const vazio={ativo:q?'Nenhum empréstimo ativo encontrado nesta busca.':'Nenhum empréstimo ativo nesta cidade.',negociado:q?'Nenhum empréstimo negociado encontrado nesta busca.':'Nenhum empréstimo negociado.',complicado:q?'Nenhum empréstimo complicado encontrado nesta busca.':'Nenhum empréstimo complicado.'};
   const pg=fatia(lista,pageEmp);pageEmp=pg.pag;
-  $('tbEmp').innerHTML=pg.itens.length?pg.itens.map(e=>`<tr><td>${esc(nome(e.clienteId))}</td><td>${rotuloFreq(e.freq)}</td><td>${brl(e.principal)}</td><td>${brl(e.total)}</td><td>${brl(pagoFaseAtual(e))}</td><td>${brl(saldo(e))}</td><td class="${dataProxVenc(e)<hoje()&&saldo(e)>.01?'late':''}">${textoVenc(e)}</td><td>${badge(e)} ${badgePasta(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</td><td>${btnEdit('editarEmp',e.id)} ${botoesPasta(e)} ${func?`${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> `:''}<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`:`<button class="green" onclick="verCliente('${e.clienteId}')">Detalhes</button> ${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> ${atrasado(e)?`<button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar no WhatsApp</button> `:''}<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button> <button onclick="continuarEmp('${e.id}')">Continuar</button>`:`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`}`} <button class="red" onclick="excluirEmp('${e.id}')">Excluir</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">${vazio[empAba]||vazio.ativo}</td></tr>`;
+  $('tbEmp').innerHTML=pg.itens.length?pg.itens.map(e=>`<tr><td>${esc(nome(e.clienteId))}</td><td>${rotuloFreq(e.freq)}</td><td>${brl(e.principal)}</td><td>${brl(jurosEmp(e))}</td><td>${brl(pagoFaseAtual(e))}</td><td>${brl(saldo(e))}</td><td class="${dataProxVenc(e)<hoje()&&saldo(e)>.01?'late':''}">${textoVenc(e)}</td><td>${badge(e)} ${badgePasta(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</td><td>${btnEdit('editarEmp',e.id)} ${botoesPasta(e)} ${func?`${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> `:''}<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`:`<button class="green" onclick="verCliente('${e.clienteId}')">Detalhes</button> ${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> ${atrasado(e)?`<button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar no WhatsApp</button> `:''}<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button> <button onclick="continuarEmp('${e.id}')">Continuar</button>`:`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`}`} <button class="red" onclick="excluirEmp('${e.id}')">Excluir</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">${vazio[empAba]||vazio.ativo}</td></tr>`;
   htmlPaginacao('pagEmp',pg.pag,pg.total,pg.qtd,'irPagEmp');
 }
 function renderPag(){const func=currentUser?.papel==='funcionario';$('tbPag').innerHTML=[...db.pagamentos].filter(p=>!ehMulta(p)&&!ehMeta(p)).sort((a,b)=>b.data.localeCompare(a.data)).map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return `<tr><td>${dataBR(p.data)}</td><td>${e?esc(nome(e.clienteId)):''}</td><td>${pc?.n||''}</td><td>${brl(p.valor)}</td><td>${esc(p.forma)}</td><td>${esc(p.obs)}</td><td>${btnEdit('editarPag',p.id)} ${func?'':`<button class="red" onclick="excluirPag('${p.id}')">Excluir</button>`}</td></tr>`}).join('')}
@@ -708,7 +714,8 @@ function textoHistoricoCliente(id){
     linhas.push('--------------------------------');
     linhas.push('Empréstimo '+(i+1)+' - '+(rotuloFreq(e.freq)));
     linhas.push('Emprestado: '+brl(e.principal));
-    linhas.push('Total a receber: '+brl(e.total));
+    linhas.push('Juros: '+brl(jurosEmp(e)));
+    linhas.push('Saldo do contrato: '+brl(Number(e.total||0)));
     linhas.push('Recebido: '+brl(pagoEmp(e.id)));
     linhas.push('Saldo: '+brl(saldo(e)));
     linhas.push('Status: '+(saldo(e)<=.01?'Quitado':(primeiroPendente(e)?.data<=hoje()?'Com atraso':'Em aberto')));
@@ -759,10 +766,11 @@ window.editarCliente=id=>{const c=acharCliente(id);if(!c)return;editCliente=Stri
   opts();
   $('eCliente').value=id;
   $('ePrincipal').value='';
-  $('eTotal').value='';
+  $('eJuros').value='';
   $('eFreq').value='weekly';
   $('eQtd').value=qtdPadraoFreq('weekly');
   $('eData').value=hoje();
+  atualizarSaldoContratoForm();
   setTimeout(()=>{
     $('eCliente').value=id;
     document.querySelector('#emprestimos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -780,15 +788,16 @@ function montarParcelas(t,q,d,f,antigas){
 function acharEmp(id){const s=String(id||'');return (db.emprestimos||[]).find(x=>String(x.id)===s)}
 function limparEmp(){
   editEmp=null;if($('eEditId'))$('eEditId').value='';
-  $('ePrincipal').value='';$('eTotal').value='';$('eFreq').value='weekly';$('eQtd').value=qtdPadraoFreq('weekly');$('eData').value=hoje();
+  $('ePrincipal').value='';$('eJuros').value='';$('eFreq').value='weekly';$('eQtd').value=qtdPadraoFreq('weekly');$('eData').value=hoje();
   if($('empFormTitulo'))$('empFormTitulo').textContent='Novo empréstimo';
   if($('salvarEmp'))$('salvarEmp').textContent='Criar empréstimo';
+  atualizarSaldoContratoForm();
 }
 window.editarEmp=id=>{
   const e=acharEmp(id);if(!e)return alert('Empréstimo não encontrado.');
   editEmp=String(e.id);if($('eEditId'))$('eEditId').value=String(e.id);
   abrirAba('emprestimos');opts();
-  $('eCliente').value=e.clienteId;$('ePrincipal').value=e.principal;$('eTotal').value=e.total;$('eFreq').value=e.freq||'weekly';
+  $('eCliente').value=e.clienteId;$('ePrincipal').value=e.principal;$('eJuros').value=jurosEmp(e);$('eFreq').value=e.freq||'weekly';atualizarSaldoContratoForm();
   $('eQtd').value=(e.parcelas||[]).length||4;$('eData').value=e.primeiroVencimento||e.parcelas?.[0]?.data||hoje();
   $('empFormTitulo').textContent='Editar empréstimo';$('salvarEmp').textContent='Salvar alterações';
   setTimeout(()=>{
@@ -799,6 +808,8 @@ window.editarEmp=id=>{
   },50);
 };
 $('limparEmp')?.addEventListener('click',limparEmp);
+$('ePrincipal')?.addEventListener('input',atualizarSaldoContratoForm);
+$('eJuros')?.addEventListener('input',atualizarSaldoContratoForm);
 $('eFreq')?.addEventListener('change',()=>{
   if(editEmp||($('eEditId')&&$('eEditId').value))return;
   $('eQtd').value=qtdPadraoFreq($('eFreq').value);
@@ -822,8 +833,9 @@ $('salvarEmp').onclick=()=>{
   if($('salvarEmp').dataset.busy==='1')return;
   $('salvarEmp').dataset.busy='1';
   try{
-    const cid=$('eCliente').value,p=+$('ePrincipal').value,t=+$('eTotal').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;
-    if(!cid||p<=0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha todos os dados corretamente.');
+    const cid=$('eCliente').value,p=+$('ePrincipal').value,j=+$('eJuros').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;
+    const t=+(p+Math.max(0,j)).toFixed(2);
+    if(!cid||p<=0||j<0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha emprestado, juros e demais dados corretamente.');
     const idEdit=String(($('eEditId')&&$('eEditId').value)||editEmp||'');
     if(idEdit){
       const e=acharEmp(idEdit);
@@ -840,11 +852,11 @@ $('salvarEmp').onclick=()=>{
     }
     const existentes=(db.emprestimos||[]).filter(e=>String(e.clienteId)===String(cid));
     if(existentes.length){
-      pendenteNovoEmp={clienteId:String(cid),principal:p,total:t,freq:f,primeiroVencimento:d,qtd:q};
+      pendenteNovoEmp={clienteId:String(cid),principal:p,juros:j,total:t,freq:f,primeiroVencimento:d,qtd:q};
       abrirConfirmaEmpExistente(cid,existentes);
       return;
     }
-    criarNovoEmp({clienteId:String(cid),principal:p,total:t,freq:f,primeiroVencimento:d,qtd:q});
+    criarNovoEmp({clienteId:String(cid),principal:p,juros:j,total:t,freq:f,primeiroVencimento:d,qtd:q});
   }finally{$('salvarEmp').dataset.busy='';}
 };
 let pendenteNovoEmp=null;
@@ -852,7 +864,7 @@ function criarNovoEmp(dados){
   const novo={id:uid(),clienteId:String(dados.clienteId),principal:dados.principal,total:dados.total,freq:dados.freq,primeiroVencimento:dados.primeiroVencimento,parcelas:montarParcelas(dados.total,dados.qtd,dados.primeiroVencimento,dados.freq),criadoEm:hoje(),pasta:'ativo'};
   if(acharEmp(novo.id))return;
   db.emprestimos=upsertById(db.emprestimos,novo);
-  $('ePrincipal').value='';$('eTotal').value='';
+  $('ePrincipal').value='';$('eJuros').value='';
   runScoped(()=>mostrarEmpNaLista(novo.id));
   render();
   alert(`Empréstimo criado. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`);
@@ -862,7 +874,7 @@ function abrirConfirmaEmpExistente(cid,lista){
   $('confirmaEmpTexto').textContent=`${nome(cid)} já possui ${n} empréstimo${n>1?'s':''} cadastrado${n>1?'s':''}.`;
   $('confirmaEmpLista').innerHTML=lista.map((e,i)=>{
     const st=statusEmp(e);
-    return `<div><b>Empréstimo ${i+1}</b> — ${rotuloFreq(e.freq)} — ${brl(e.total)} — saldo ${brl(saldo(e))} — ${st}${pastaEmp(e)!=='ativo'?' ('+pastaEmp(e)+')':''}</div>`;
+    return `<div><b>Empréstimo ${i+1}</b> — ${rotuloFreq(e.freq)} — emprestado ${brl(e.principal)} + juros ${brl(jurosEmp(e))} = ${brl(e.total)} — saldo ${brl(saldo(e))} — ${st}${pastaEmp(e)!=='ativo'?' ('+pastaEmp(e)+')':''}</div>`;
   }).join('');
   $('modalConfirmaEmp').dataset.clienteId=String(cid);
   $('modalConfirmaEmp').classList.remove('hidden');
@@ -965,7 +977,7 @@ $('salvarPag').onclick=()=>{
 };
 window.excluirPag=id=>{if(currentUser?.papel==='funcionario')return alert('Funcionário não pode excluir pagamentos.');const p=db.pagamentos.find(x=>x.id===id);if(!p)return;if(!confirm(`Excluir ${ehMulta(p)?'a multa':'o pagamento'} de ${brl(p.valor)}?`))return;db.pagamentos=db.pagamentos.filter(x=>x.id!==id);render()};
 function download(nome,txt,tipo){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:tipo}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}function csv(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(';')).join('\n')}
-$('csvClientes').onclick=()=>download('clientes.csv',csv([['Data de cadastro','Nome','Telefone','Documento','Endereço','Responsável','Unidade'],...[...db.clientes].sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')).map(c=>[c.criadoEm?dataBR(c.criadoEm):'Sem data',c.nome,c.tel,c.doc,c.end,c.responsavel||'',c.unidade||'Imperatriz - MA'])]),'text/csv');$('csvEmp').onclick=()=>download('emprestimos.csv',csv([['Cliente','Frequência','Emprestado','Total','Recebido','Saldo','Status'],...db.emprestimos.map(e=>[nome(e.clienteId),rotuloFreq(e.freq),e.principal,e.total,pagoEmp(e.id),saldo(e),statusEmp(e)])]),'text/csv');$('csvPag').onclick=()=>download('pagamentos.csv',csv([['Data','Cliente','Parcela','Valor','Forma','Observação'],...db.pagamentos.map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return[dataBR(p.data),e?nome(e.clienteId):'',pc?.n||'',p.valor,p.forma,p.obs]})]),'text/csv');$('backupBtn').onclick=()=>download('backup_emprestimos.json',JSON.stringify(db,null,2),'application/json');$('importar').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.clientes||!x.emprestimos||!x.pagamentos)throw 0;db=x;render();alert('Backup importado.')}catch{alert('Backup inválido.')}};r.readAsText(f)};$('apagar').onclick=()=>{if(confirm('Apagar todos os dados desta cidade?')){const keep=cidadeAtualId;db.clientes=db.clientes.filter(c=>clienteCidadeId(c)!==keep);const ids=new Set(db.clientes.map(c=>c.id));db.emprestimos=db.emprestimos.filter(e=>ids.has(e.clienteId));const eids=new Set(db.emprestimos.map(e=>e.id));db.pagamentos=db.pagamentos.filter(p=>eids.has(p.empId));render()}};
+$('csvClientes').onclick=()=>download('clientes.csv',csv([['Data de cadastro','Nome','Telefone','Documento','Endereço','Responsável','Unidade'],...[...db.clientes].sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')).map(c=>[c.criadoEm?dataBR(c.criadoEm):'Sem data',c.nome,c.tel,c.doc,c.end,c.responsavel||'',c.unidade||'Imperatriz - MA'])]),'text/csv');$('csvEmp').onclick=()=>download('emprestimos.csv',csv([['Cliente','Frequência','Emprestado','Juros','Saldo contrato','Recebido','Saldo','Status'],...db.emprestimos.map(e=>[nome(e.clienteId),rotuloFreq(e.freq),e.principal,jurosEmp(e),e.total,pagoEmp(e.id),saldo(e),statusEmp(e)])]),'text/csv');$('csvPag').onclick=()=>download('pagamentos.csv',csv([['Data','Cliente','Parcela','Valor','Forma','Observação'],...db.pagamentos.map(p=>{const e=db.emprestimos.find(x=>x.id===p.empId),pc=e?.parcelas.find(x=>x.id===p.parcId);return[dataBR(p.data),e?nome(e.clienteId):'',pc?.n||'',p.valor,p.forma,p.obs]})]),'text/csv');$('backupBtn').onclick=()=>download('backup_emprestimos.json',JSON.stringify(db,null,2),'application/json');$('importar').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.clientes||!x.emprestimos||!x.pagamentos)throw 0;db=x;render();alert('Backup importado.')}catch{alert('Backup inválido.')}};r.readAsText(f)};$('apagar').onclick=()=>{if(confirm('Apagar todos os dados desta cidade?')){const keep=cidadeAtualId;db.clientes=db.clientes.filter(c=>clienteCidadeId(c)!==keep);const ids=new Set(db.clientes.map(c=>c.id));db.emprestimos=db.emprestimos.filter(e=>ids.has(e.clienteId));const eids=new Set(db.emprestimos.map(e=>e.id));db.pagamentos=db.pagamentos.filter(p=>eids.has(p.empId));render()}};
 
 async function renderUsuarios(){
   if(!currentUser||(currentUser.papel!=='admin'&&currentUser.papel!=='socio')){if($('tabSocios'))$('tabSocios').classList.add('hidden');return;}
