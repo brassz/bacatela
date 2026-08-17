@@ -29,7 +29,7 @@
 <section id="clientes" class="sec"><div class="card"><h2>Cadastro de cliente</h2><div class="grid"><div><label>Nome</label><input id="cNome"></div><div><label>Telefone</label><input id="cTel"></div><div><label>Documento</label><input id="cDoc"></div><div><label>Endereço</label><input id="cEnd"></div></div><label>Observações</label><textarea id="cObs"></textarea><div class="actions"><button id="salvarCliente">Salvar cliente</button><button class="gray" id="limparCliente">Cancelar edição</button></div></div><div class="card"><input id="buscaCliente" placeholder="Pesquisar cliente"><div class="table"><table><thead><tr><th>Data de cadastro</th><th>Nome</th><th>Telefone</th><th>Documento</th><th>Responsável</th><th>Empréstimos</th><th>Ações</th></tr></thead><tbody id="tbClientes"></tbody></table></div><div class="paginacao" id="pagClientes"></div></div><div id="historicoCliente" class="card hidden"><div class="history-head"><div><h2 id="histTitulo">Empréstimos do cliente</h2><div id="histContato"></div></div><div class="actions"><button class="green" id="compartilharHistorico">📤 Enviar histórico</button><button class="gray" id="fecharHistorico">Fechar</button></div></div><div id="histResumo" class="summary-grid"></div><div id="histLista"></div></div></section>
 <section id="emprestimos" class="sec"><div class="card"><h2 id="empFormTitulo">Novo empréstimo</h2><div class="grid"><div><label>Cliente</label><select id="eCliente"></select></div><div><label>Valor emprestado</label><input id="ePrincipal" type="number" step="0.01"></div><div><label>Juros</label><input id="eJuros" type="number" step="0.01" min="0"></div><div><label>Frequência</label><select id="eFreq"><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="daily">Diário (30 dias)</option></select></div><div><label>Número de parcelas</label><input id="eQtd" type="number" min="1" value="4"></div><div><label>Primeiro vencimento</label><input id="eData" type="date"></div></div><p class="small" id="eSaldoContrato">Saldo do contrato: R$ 0,00 (emprestado + juros)</p><p class="small">A data é salva exatamente como foi escolhida, sem conversão de fuso horário.</p><div class="actions"><button type="button" id="salvarEmp">Criar empréstimo</button><button type="button" class="gray" id="limparEmp">Cancelar edição</button></div><input type="hidden" id="eEditId" value=""></div><div class="card"><div class="subtabs" id="empSubtabs"><button class="active" data-emp-tab="ativo">Empréstimos Ativos</button><button data-emp-tab="negociado">Empréstimos Negociados</button><button data-emp-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="empAbaHint">Empréstimos em andamento. Use Negociado ou Complicado para organizar a carteira.</p><div class="grid"><div><label>Filtrar empréstimos por cliente</label><select id="filtroEmpCliente"><option value="">Todos os clientes</option></select></div><div><label>Filtrar por frequência</label><select id="filtroEmpFreq"><option value="">Todas as frequências</option><option value="daily">Somente diários</option><option value="weekly">Somente semanais</option><option value="monthly">Somente mensais</option></select></div></div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 12px"><div style="flex:1;min-width:220px"><label>Buscar por cliente</label><input id="buscaEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaEmp">Buscar</button><button type="button" class="gray" id="limparBuscaEmp">Limpar</button></div><div class="table"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Emprestado</th><th>Juros</th><th>Recebido</th><th>Saldo</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbEmp"></tbody></table></div><div class="paginacao" id="pagEmp"></div></div></section>
 <section id="historico" class="sec"><div class="card"><h2>📜 Histórico de empréstimos</h2><p class="small">Resumo compacto. Use Buscar para achar o cliente e “Ver parcelas” para abrir o detalhe.</p><div class="grid"><div><label>Buscar cliente</label><input id="histBuscaCliente" placeholder="Digite o nome do cliente"></div><div><label>Cliente</label><select id="histFiltroCliente"><option value="">Todos os clientes</option></select></div></div><div class="actions"><button type="button" id="btnBuscaHist">Buscar</button><button type="button" class="gray" id="limparBuscaHist">Limpar</button></div></div><div id="histPagina"></div></section>
-<section id="pagamentos" class="sec"><div class="card"><h2 id="pagFormTitulo">Registrar pagamento</h2><p class="small">Selecione o empréstimo e a parcela paga. O valor não pode ser menor que a parcela; se for maior, você escolhe se o extra abate no valor emprestado ou na próxima parcela.</p><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button><button class="gray" id="limparPag">Cancelar edição</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
+<section id="pagamentos" class="sec"><div class="card"><h2 id="pagFormTitulo">Registrar pagamento</h2><p class="small">Selecione o empréstimo e a parcela paga. Se o valor for menor que a parcela, a diferença é diluída nas parcelas restantes. Se for maior, você escolhe se o extra abate no valor emprestado ou na próxima parcela.</p><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button><button class="gray" id="limparPag">Cancelar edição</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
 <section id="multas" class="sec"><div class="card"><h2>💸 Multas</h2><p class="small">Multas lançadas ao registrar pagamento, somente da cidade selecionada.</p><div class="m" style="max-width:280px"><small>Total de multas</small><b id="totalMultas">R$ 0,00</b></div></div><div class="card"><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbMultas"></tbody></table></div></div></section>
 <section id="verificacoes" class="sec"><div class="card"><h2>🔎 Verificações</h2><p class="small">Clientes que enviaram documentos pelo formulário de cadastro. Link para o cliente: <b id="linkFormCadastro"></b></p><div class="actions"><button class="gray" id="copiarLinkCadastro">Copiar link do cadastro</button><button class="gray" id="atualizarVerificacoes">Atualizar lista</button></div></div><div class="card"><div class="table"><table><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>CPF</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbVerificacoes"></tbody></table></div><div id="detalheVerificacao" class="hidden" style="margin-top:16px"></div></div></section>
 <section id="socios" class="sec"><div class="card"><h2>👥 Acessos ao Sistema</h2><p class="small">Cadastre sócios e funcionários. Cada pessoa terá usuário e senha próprios para entrar pelo mesmo link.</p><div class="grid"><div><label>Nome</label><input id="uNome" placeholder="Ex.: João Silva"></div><div><label>Usuário</label><input id="uUsuario" placeholder="Ex.: joao"></div><div><label>Senha inicial</label><input id="uSenha" type="password" placeholder="Mínimo 8 caracteres"></div><div><label>Tipo de acesso</label><select id="uPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — clientes, empréstimos e pagamentos</option></select></div></div><div class="actions"><button id="criarSocio">Adicionar acesso</button></div><div id="uErro" class="error"></div></div><div class="card"><h2>Usuários com acesso</h2><div class="table"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbUsuarios"></tbody></table></div></div></section>
@@ -1009,6 +1009,25 @@ window.editarPag=id=>{
   setTimeout(()=>document.querySelector('#pagamentos .card')?.scrollIntoView({behavior:'smooth',block:'start'}),50);
 };
 $('limparPag')?.addEventListener('click',limparPag);
+function parcelasParaDiluir(e,parc){
+  const depois=(e.parcelas||[])
+    .filter(p=>String(p.id)!==String(parc.id)&&restanteParcela(e,p)>.01&&(p.n||0)>(parc.n||0))
+    .sort((a,b)=>(a.n||0)-(b.n||0)||(a.data||'').localeCompare(b.data||''));
+  if(depois.length)return depois;
+  return (e.parcelas||[])
+    .filter(p=>String(p.id)!==String(parc.id)&&restanteParcela(e,p)>.01)
+    .sort((a,b)=>(a.n||0)-(b.n||0)||(a.data||'').localeCompare(b.data||''));
+}
+function diluirFaltaNasParcelas(dest,falta){
+  const n=dest.length;if(!n||!(falta>0))return;
+  const base=+(falta/n).toFixed(2);
+  let soma=0;
+  dest.forEach((p,i)=>{
+    const add=i===n-1?+(falta-soma).toFixed(2):base;
+    if(i<n-1)soma+=add;
+    p.valor=+(Number(p.valor||0)+add).toFixed(2);
+  });
+}
 function reduzirProximasParcelas(e,ignorarParcId,extra){
   let rest=+Number(extra).toFixed(2);
   const pend=(e.parcelas||[])
@@ -1090,7 +1109,6 @@ $('salvarPag').onclick=()=>{
   if(!e||!pc)return alert('Empréstimo ou parcela não encontrados.');
   const jaPago=pagoParc(eid,pid)-(atual&&String(atual.parcId)===String(pid)?Number(atual.valor||0):0);
   const r=Math.max(0,+(Number(pc.valor)-jaPago).toFixed(2));
-  if(v+0.01<r)return alert('O valor pago não pode ser menor que a parcela ('+brl(r)+').');
   if(v>r+0.01){
     const excesso=+(v-r).toFixed(2);
     pendenteExcessoPag={eid,pid,valor:v,data:d,forma:$('pForma').value,obs:$('pObs').value,atual,excesso,restante:r};
@@ -1098,15 +1116,31 @@ $('salvarPag').onclick=()=>{
     $('modalExcessoPag').classList.remove('hidden');
     return;
   }
-  if(atual){
-    atual.empId=eid;atual.parcId=pid;atual.valor=v;atual.data=d;atual.forma=$('pForma').value;atual.obs=$('pObs').value;
-    fecharQuitacaoSePago(e);
-    limparPag();render();alert('Pagamento atualizado.');return;
+  let obs=$('pObs').value||'';
+  const menor=v+0.01<r;
+  const falta=menor?+(r-v).toFixed(2):0;
+  const dest=menor?parcelasParaDiluir(e,pc):[];
+  if(menor){
+    if(dest.length){
+      if(!confirm('O pagamento é menor que a parcela '+pc.n+' ('+brl(r)+'). A diferença de '+brl(falta)+' será diluída nas '+dest.length+' parcela(s) restante(s). Continuar?'))return;
+      obs=(obs?obs+' — ':'')+'Pagamento menor: diferença '+brl(falta)+' diluída nas parcelas restantes';
+    }else if(!confirm('O pagamento é menor que a parcela e não há outras parcelas para diluir. A parcela '+pc.n+' ficará com restante de '+brl(falta)+'. Continuar?'))return;
   }
-  db.pagamentos.push({id:uid(),empId:eid,parcId:pid,valor:v,data:d,forma:$('pForma').value,obs:$('pObs').value});
+  if(atual){
+    atual.empId=eid;atual.parcId=pid;atual.valor=v;atual.data=d;atual.forma=$('pForma').value;atual.obs=obs;
+  }else{
+    db.pagamentos.push({id:uid(),empId:eid,parcId:pid,valor:v,data:d,forma:$('pForma').value,obs:obs});
+  }
+  if(menor&&dest.length){
+    pc.valor=+(pagoParc(eid,pid)).toFixed(2);
+    diluirFaltaNasParcelas(dest,falta);
+    e.total=+((e.parcelas||[]).reduce((a,x)=>a+Number(x.valor||0),0)).toFixed(2);
+  }
   fecharQuitacaoSePago(e);
+  if(atual){limparPag();render();alert(menor&&dest.length?'Pagamento atualizado e diferença diluída nas parcelas restantes.':'Pagamento atualizado.');return;}
   $('pValor').value='';$('pObs').value='';
   render();
+  if(menor&&dest.length)alert('Pagamento registrado. A diferença de '+brl(falta)+' foi diluída nas parcelas restantes.');
   perguntarMultaPagamento(eid,d);
 };
 window.excluirPag=id=>{if(currentUser?.papel==='funcionario')return alert('Funcionário não pode excluir pagamentos.');const p=db.pagamentos.find(x=>x.id===id);if(!p)return;if(!confirm(`Excluir ${ehMulta(p)?'a multa':'o pagamento'} de ${brl(p.valor)}?`))return;db.pagamentos=db.pagamentos.filter(x=>x.id!==id);render()};
