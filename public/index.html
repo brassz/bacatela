@@ -131,7 +131,11 @@ function avancarData(base,freq,n){
   return addDias(base,7*k);
 }
 function proximoPasso(base,freq){return avancarData(base,freq,1)}
-function qtdPadraoFreq(f){return f==='daily'?30:f==='monthly'?4:4}
+function qtdPadraoFreq(f){return f==='daily'?30:f==='weekly'?4:4}
+function ehSemanal(e){return (e?.freq||'weekly')==='weekly'}
+function parcelasSoJuros(e){return ehSemanal(e)&&(e.parcelasTipo==='juros')}
+function capitalPendente(e){return (!parcelasSoJuros(e)||e.dataQuitacao)?0:Math.max(0,Number(e.principal||0))}
+function valorMontagemParcelas(freq,juros,total){return freq==='weekly'?Math.max(0,Number(juros)||0):Number(total)||0}
 function dataBR(s){if(!s)return '';const [a,m,d]=s.split('-');return `${d}/${m}/${a}`}
 const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -175,7 +179,7 @@ function save(){
     data:hoje(),
     forma:'_META_',
     tipo:'emp_meta',
-    obs:JSON.stringify({pasta:pastaEmp(e),historico:Array.isArray(e.historico)?e.historico:[]})
+    obs:JSON.stringify({pasta:pastaEmp(e),historico:Array.isArray(e.historico)?e.historico:[],parcelasTipo:e.parcelasTipo||null})
   }));
   const data={clientes:db.clientes,emprestimos:db.emprestimos,pagamentos:uniqueById((db.pagamentos||[]).filter(p=>!ehMeta(p)).concat(metas)),cidades:db.cidades||[]};
   const rev=serverRevision;
@@ -224,6 +228,7 @@ async function load(){
     if(j){
       if(j.pasta) e.pasta=j.pasta;
       if(Array.isArray(j.historico)) e.historico=j.historico;
+      if(j.parcelasTipo) e.parcelasTipo=j.parcelasTipo;
     }
     if(!Array.isArray(e.parcelas)) e.parcelas=[];
     if(e.pasta!=='negociado'&&e.pasta!=='complicado') e.pasta='ativo';
@@ -314,11 +319,21 @@ function ehRenovacao(p){return p&&((p.tipo==='renovacao_taxa')||(p.tipo==='renov
 function pagoParc(eid,pid){return db.pagamentos.filter(p=>p.empId===eid&&p.parcId===pid&&!ehRenovacao(p)).reduce((a,p)=>a+Number(p.valor),0)}
 function restanteParcela(e,p){return Math.max(0,Number(p.valor)-pagoParc(e.id,p.id))}
 function jurosEmp(e){return Math.max(0,+(Number(e.total||0)-Number(e.principal||0)).toFixed(2))}
+function syncTotalContrato(e){
+  const soma=(e.parcelas||[]).reduce((a,p)=>a+Number(p.valor||0),0);
+  e.total=parcelasSoJuros(e)?+(Number(e.principal||0)+soma).toFixed(2):+soma.toFixed(2);
+}
 function saldoContrato(e){return +(Number(e.principal||0)+jurosEmp(e)).toFixed(2)}
-function saldo(e){return (e.parcelas||[]).reduce((total,p)=>total+restanteParcela(e,p),0)}
+function saldo(e){return +((e.parcelas||[]).reduce((total,p)=>total+restanteParcela(e,p),0)+capitalPendente(e)).toFixed(2)}
 function atualizarSaldoContratoForm(){
-  const p=+$('ePrincipal').value||0,j=+$('eJuros').value||0;
-  if($('eSaldoContrato'))$('eSaldoContrato').textContent='Saldo do contrato: '+brl(p+j)+' (emprestado '+brl(p)+' + juros '+brl(j)+')';
+  const p=+$('ePrincipal').value||0,j=+$('eJuros').value||0,f=$('eFreq')&&$('eFreq').value;
+  if(!$('eSaldoContrato'))return;
+  if(f==='weekly'){
+    const parc=j>0?+(j/4).toFixed(2):0;
+    $('eSaldoContrato').textContent='Semanal: 4 parcelas de '+brl(parc)+' (somente juros '+brl(j)+'). Valor emprestado '+brl(p)+' permanece até quitar. Após as 4, pergunta se deseja renovar.';
+  }else{
+    $('eSaldoContrato').textContent='Saldo do contrato: '+brl(p+j)+' (emprestado '+brl(p)+' + juros '+brl(j)+')';
+  }
 }
 function valorVencido(e){return e.parcelas.filter(p=>p.data<=hoje()).reduce((a,p)=>a+restanteParcela(e,p),0)}
 function primeiroPendente(e){return (e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01).sort((a,b)=>a.data.localeCompare(b.data))[0]}
@@ -349,7 +364,7 @@ function textoVenc(e){
 }
 function todasParcelasPagas(e){return e.parcelas.length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)}
 function atrasado(e){return e.parcelas.some(p=>restanteParcela(e,p)>.01&&p.data<=hoje())}
-function statusEmp(e){return todasParcelasPagas(e)?'Quitado':atrasado(e)?'Atrasado':'Em aberto'}
+function statusEmp(e){return (e.dataQuitacao||(todasParcelasPagas(e)&&capitalPendente(e)<=.01))?'Quitado':atrasado(e)?'Atrasado':'Em aberto'}
 function pastaEmp(e){return (e&&(e.pasta==='negociado'||e.pasta==='complicado'))?e.pasta:'ativo'}
 function badgePasta(e){const p=pastaEmp(e);if(p==='negociado')return '<span class="badge open">Negociado</span>';if(p==='complicado')return '<span class="badge late">Complicado</span>';return ''}
 function snapshotFase(e){
@@ -442,7 +457,7 @@ function aplicarAbater(){
     const jaPago=pagoParc(e.id,p.id);
     p.valor=+(jaPago+Number(porId.get(String(p.id)))).toFixed(2);
   });
-  e.total=+((e.parcelas||[]).reduce((a,p)=>a+Number(p.valor||0),0)).toFixed(2);
+  syncTotalContrato(e);
   if(saldo(e)<=.01) e.dataQuitacao=hoje();
   else if(e.dataQuitacao) delete e.dataQuitacao;
   fecharAbater();
@@ -548,10 +563,45 @@ window.renovarParcelas=id=>{
   $('modalRenova').classList.remove('hidden');
 };
 function fecharRenova(){$('modalRenova').classList.add('hidden')}
+function cicloJurosSemanalPago(e){
+  return ehSemanal(e)&&e.parcelasTipo==='juros'&&!e.dataQuitacao&&(e.parcelas||[]).length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)&&capitalPendente(e)>.01;
+}
+function renovarCicloSemanal(e,dataInicio){
+  const j=jurosEmp(e);
+  if(j<=0)return alert('Não há juros para renovar o ciclo semanal.');
+  if(!Array.isArray(e.historico)) e.historico=[];
+  e.historico.push(snapshotFase(e));
+  const d=dataInicio&&/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)?dataInicio:proximoPasso(hoje(),'weekly');
+  e.parcelas=montarParcelas(j,4,d,'weekly');
+  e.parcelasTipo='juros';
+  e.primeiroVencimento=d;
+  e.renovadoEm=hoje();
+  e.total=+(Number(e.principal||0)+j).toFixed(2);
+  if(e.dataQuitacao) delete e.dataQuitacao;
+}
+function perguntarRenovaSemanal(eid){
+  const e=acharEmp(eid);if(!e||!cicloJurosSemanalPago(e))return;
+  const j=jurosEmp(e);
+  const parc=+(j/4).toFixed(2);
+  if(confirm(`As 4 parcelas de juros de ${nome(e.clienteId)} foram pagas.\n\nValor emprestado ${brl(e.principal)} continua em aberto.\n\nDeseja renovar por mais 4 semanas (${brl(parc)} por parcela)?`)){
+    renovarCicloSemanal(e,proximoPasso(hoje(),'weekly'));
+    render();
+    alert('Empréstimo semanal renovado. Foram geradas 4 novas parcelas de juros. O valor emprestado não foi alterado.');
+  }else{
+    alert('Ciclo encerrado. O valor emprestado de '+brl(e.principal)+' permanece em aberto. Use Quitar para liquidar o capital.');
+  }
+}
 function aplicarRenova(){
   const e=acharEmp($('renovaEmpId').value);if(!e)return;
   const d=$('renovaData').value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Informe a data do próximo vencimento.');
+  if(ehSemanal(e)&&e.parcelasTipo==='juros'&&todasParcelasPagas(e)&&capitalPendente(e)>.01){
+    renovarCicloSemanal(e,d);
+    fecharRenova();
+    render();
+    alert('Ciclo semanal renovado. 4 novas parcelas de juros. O valor emprestado permanece.');
+    return;
+  }
   const pars=[...(e.parcelas||[])].sort((a,b)=>a.n-b.n);
   if(!pars.length)return alert('Este empréstimo não tem parcelas para renovar.');
   pars.forEach((pc,i)=>{pc.data=avancarData(d,e.freq||'weekly',i);});
@@ -566,7 +616,7 @@ function botoesPasta(e){
   const abater=saldo(e)>.01?`<button type="button" class="green" onclick="abrirAbater('${e.id}')">Abater</button> `:'';
   return `${p!=='ativo'?`<button class="gray" onclick="moverEmpPasta('${e.id}','ativo')">Ativo</button> `:''}${p!=='negociado'?`<button onclick="moverEmpPasta('${e.id}','negociado')">Negociado</button> `:''}${p!=='complicado'?`<button class="red" onclick="moverEmpPasta('${e.id}','complicado')">Complicado</button> `:''}<button type="button" onclick="renovarParcelas('${e.id}')">Renovar</button> ${abater}`;
 }
-function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(!todasParcelasPagas(e))return '';const pags=db.pagamentos.filter(p=>p.empId===e.id&&p.data).sort((a,b)=>a.data.localeCompare(b.data));return pags.length?pags[pags.length-1].data:''}
+function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(capitalPendente(e)>.01)return '';if(!todasParcelasPagas(e))return '';const pags=db.pagamentos.filter(p=>p.empId===e.id&&p.data).sort((a,b)=>a.data.localeCompare(b.data));return pags.length?pags[pags.length-1].data:''}
 function badge(e){const s=statusEmp(e);return `<span class="badge ${s==='Quitado'?'paid':s==='Atrasado'?'late':'open'}">${s}</span>`}
 const DADOS_COBRANCA={banco:'Nubank',titular:'Alg comercial ou Al gavioli lanches',pix:'16991753893',pixExibir:'(16) 99175-3893'};
 function telefoneWhatsApp(tel){let n=String(tel||'').replace(/\D/g,'');if((n.length===10||n.length===11)&&!n.startsWith('55'))n='55'+n;return n}
@@ -582,7 +632,7 @@ function textoCobranca(e){
 }
 window.cobrarWhatsApp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;if(!atrasado(e))return alert('Este empréstimo não possui pagamento vencido.');const c=db.clientes.find(x=>x.id===e.clienteId);const tel=telefoneWhatsApp(c?.tel);if(!tel)return alert('Cadastre o telefone do cliente para enviar a cobrança pelo WhatsApp.');const msg=encodeURIComponent(textoCobranca(e));window.open(`https://wa.me/${tel}?text=${msg}`,'_blank')}
 function classificaEmp(e){
-  if(!e||saldo(e)<=.01||todasParcelasPagas(e)) return 'quitado';
+  if(!e||saldo(e)<=.01) return 'quitado';
   const pend=(e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01);
   if(pend.some(p=>p.data<hoje())) return 'vencido';
   if(pend.some(p=>p.data===hoje())) return 'hoje';
@@ -737,7 +787,7 @@ function renderHistorico(id){
     const fases=Array.isArray(e.historico)?e.historico:[];
     const atual={em:'',pasta:pastaEmp(e),principal:e.principal,total:e.total,freq:e.freq,parcelas:e.parcelas||[],pagamentos:db.pagamentos.filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)&&!ehMeta(p)&&(!p.parcId||(e.parcelas||[]).some(x=>String(x.id)===String(p.parcId)))),recebido:pagoFaseAtual(e),saldo:saldo(e)};
     const antigas=fases.map((f,n)=>htmlFaseHistorico('Empréstimo antigo '+(n+1),f,{fechado:true})).join('');
-    return `<div>${antigas}${htmlFaseHistorico('Acordo atual — '+(rotuloFreq(e.freq)),atual)}<div class="actions">${todasParcelasPagas(e)?`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo para este cliente</button>`:`<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button>`}</div></div>`;
+    return `<div>${antigas}${htmlFaseHistorico('Acordo atual — '+(rotuloFreq(e.freq)),atual)}<div class="actions">${saldo(e)<=.01?`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo para este cliente</button>`:`<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button>`}</div></div>`;
   }).join(''):'<div class="empty">Nenhum empréstimo cadastrado.</div>';
   $('historicoCliente').classList.remove('hidden');
   abrirAba('clientes');
@@ -865,8 +915,10 @@ $('limparEmp')?.addEventListener('click',limparEmp);
 $('ePrincipal')?.addEventListener('input',atualizarSaldoContratoForm);
 $('eJuros')?.addEventListener('input',atualizarSaldoContratoForm);
 $('eFreq')?.addEventListener('change',()=>{
-  if(editEmp||($('eEditId')&&$('eEditId').value))return;
-  $('eQtd').value=qtdPadraoFreq($('eFreq').value);
+  const f=$('eFreq').value;
+  if(f==='weekly') $('eQtd').value=4;
+  else if(!(editEmp||($('eEditId')&&$('eEditId').value))) $('eQtd').value=qtdPadraoFreq(f);
+  atualizarSaldoContratoForm();
 });
 $('confirmarNegocia')?.addEventListener('click',aplicarNegocia);
 $('cancelarNegocia')?.addEventListener('click',fecharNegocia);
@@ -896,16 +948,20 @@ $('salvarEmp').onclick=()=>{
   if($('salvarEmp').dataset.busy==='1')return;
   $('salvarEmp').dataset.busy='1';
   try{
-    const cid=$('eCliente').value,p=+$('ePrincipal').value,j=+$('eJuros').value,q=Math.floor(+$('eQtd').value),d=$('eData').value,f=$('eFreq').value;
+    const cid=$('eCliente').value,p=+$('ePrincipal').value,j=+$('eJuros').value,d=$('eData').value,f=$('eFreq').value;
+    const q=f==='weekly'?4:Math.floor(+$('eQtd').value);
     const t=+(p+Math.max(0,j)).toFixed(2);
     if(!cid||p<=0||j<0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha emprestado, juros e demais dados corretamente.');
+    if(f==='weekly'&&j<=0)return alert('No empréstimo semanal, informe os juros. Eles serão divididos em 4 parcelas.');
     const idEdit=String(($('eEditId')&&$('eEditId').value)||editEmp||'');
+    const baseParc=valorMontagemParcelas(f,j,t);
     if(idEdit){
       const e=acharEmp(idEdit);
       if(!e)return alert('Não foi possível editar: empréstimo não encontrado. Atualize a página.');
       const atualizado=Object.assign({},e,{
         id:String(e.id),clienteId:String(cid),principal:p,total:t,freq:f,primeiroVencimento:d,
-        parcelas:montarParcelas(t,q,d,f,e.parcelas),pasta:pastaEmp(e)
+        parcelas:montarParcelas(baseParc,q,d,f,e.parcelas),pasta:pastaEmp(e),
+        parcelasTipo:f==='weekly'?'juros':'total'
       });
       db.emprestimos=upsertById(db.emprestimos,atualizado);
       limparEmp();
@@ -924,13 +980,18 @@ $('salvarEmp').onclick=()=>{
 };
 let pendenteNovoEmp=null;
 function criarNovoEmp(dados){
-  const novo={id:uid(),clienteId:String(dados.clienteId),principal:dados.principal,total:dados.total,freq:dados.freq,primeiroVencimento:dados.primeiroVencimento,parcelas:montarParcelas(dados.total,dados.qtd,dados.primeiroVencimento,dados.freq),criadoEm:hoje(),pasta:'ativo'};
+  const q=dados.freq==='weekly'?4:dados.qtd;
+  const baseParc=valorMontagemParcelas(dados.freq,dados.juros,dados.total);
+  const novo={id:uid(),clienteId:String(dados.clienteId),principal:dados.principal,total:dados.total,freq:dados.freq,primeiroVencimento:dados.primeiroVencimento,parcelas:montarParcelas(baseParc,q,dados.primeiroVencimento,dados.freq),criadoEm:hoje(),pasta:'ativo',parcelasTipo:dados.freq==='weekly'?'juros':'total'};
   if(acharEmp(novo.id))return;
   db.emprestimos=upsertById(db.emprestimos,novo);
   $('ePrincipal').value='';$('eJuros').value='';
   runScoped(()=>mostrarEmpNaLista(novo.id));
   render();
-  alert(`Empréstimo criado. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`);
+  const parc=novo.parcelas[0];
+  alert(dados.freq==='weekly'
+    ?`Empréstimo semanal criado. 4 parcelas de juros de ${brl(parc?.valor||0)}. Valor emprestado ${brl(dados.principal)} permanece até quitar. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`
+    :`Empréstimo criado. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`);
 }
 function abrirConfirmaEmpExistente(cid,lista){
   const n=lista.length;
@@ -971,7 +1032,19 @@ window.excluirEmp=id=>{
   if(String(editEmp)===String(id)||($('eEditId')&&$('eEditId').value===String(id)))limparEmp();
   render();
 };
-window.quitarEmp=id=>{if(currentUser?.papel==='funcionario')return alert('Funcionário não pode quitar empréstimos.');const e=db.emprestimos.find(x=>x.id===id);if(!e||saldo(e)<=.01)return;const restante=saldo(e);if(!confirm(`Quitar todo o saldo de ${brl(restante)} de ${nome(e.clienteId)}?`))return;e.parcelas.forEach(pc=>{const r=restanteParcela(e,pc);if(r>.01)db.pagamentos.push({id:uid(),empId:e.id,parcId:pc.id,valor:+r.toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação total do empréstimo'})});e.dataQuitacao=hoje();render();if(confirm('Empréstimo quitado. Deseja fazer um novo empréstimo para este cliente agora?'))novoEmp(e.clienteId)};
+window.quitarEmp=id=>{
+  if(currentUser?.papel==='funcionario')return alert('Funcionário não pode quitar empréstimos.');
+  const e=db.emprestimos.find(x=>x.id===id);if(!e||saldo(e)<=.01)return;
+  const restante=saldo(e);
+  if(!confirm(`Quitar todo o saldo de ${brl(restante)} de ${nome(e.clienteId)}?`))return;
+  e.parcelas.forEach(pc=>{const r=restanteParcela(e,pc);if(r>.01)db.pagamentos.push({id:uid(),empId:e.id,parcId:pc.id,valor:+r.toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação total do empréstimo'})});
+  if(parcelasSoJuros(e)&&Number(e.principal||0)>.01){
+    db.pagamentos.push({id:uid(),empId:e.id,parcId:null,valor:+Number(e.principal).toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação do valor emprestado (capital)',tipo:'quitacao_capital'});
+  }
+  e.dataQuitacao=hoje();
+  render();
+  if(confirm('Empréstimo quitado. Deseja fazer um novo empréstimo para este cliente agora?'))novoEmp(e.clienteId);
+};
 window.continuarEmp=id=>{
   if(currentUser?.papel==='funcionario')return alert('Funcionário não pode alterar vencimentos.');
   const e=db.emprestimos.find(x=>x.id===id);if(!e||saldo(e)<=.01)return;
@@ -1050,7 +1123,7 @@ function reduzirProximasParcelas(e,ignorarParcId,extra){
     p.valor=+(jaPago+(r-take)).toFixed(2);
     rest=+(rest-take).toFixed(2);
   }
-  e.total=+((e.parcelas||[]).reduce((a,p)=>a+Number(p.valor||0),0)).toFixed(2);
+  syncTotalContrato(e);
   return rest;
 }
 function fecharQuitacaoSePago(e){
@@ -1075,7 +1148,7 @@ function aplicarDestinoExcesso(e,pid,excesso,destino){
       alert('Não havia parcela seguinte suficiente. O restante de '+brl(sobra)+' foi abatido no valor emprestado.');
     }
   }
-  e.total=+((e.parcelas||[]).reduce((a,p)=>a+Number(p.valor||0),0)).toFixed(2);
+  syncTotalContrato(e);
   fecharQuitacaoSePago(e);
 }
 function concluirPagamentoExcesso(destino){
@@ -1091,10 +1164,11 @@ function concluirPagamentoExcesso(destino){
   aplicarDestinoExcesso(e,d.pid,d.excesso,destino);
   pendenteExcessoPag=null;
   $('modalExcessoPag').classList.add('hidden');
-  if(d.atual){limparPag();render();alert('Pagamento atualizado.');return;}
+  if(d.atual){limparPag();render();alert('Pagamento atualizado.');perguntarRenovaSemanal(d.eid);return;}
   $('pValor').value='';$('pObs').value='';
   render();
   perguntarMultaPagamento(d.eid,d.data);
+  perguntarRenovaSemanal(d.eid);
 }
 function fecharExcessoPag(){
   pendenteExcessoPag=null;
@@ -1143,14 +1217,15 @@ $('salvarPag').onclick=()=>{
   if(menor&&dest.length){
     pc.valor=+(pagoParc(eid,pid)).toFixed(2);
     diluirFaltaNasParcelas(dest,falta);
-    e.total=+((e.parcelas||[]).reduce((a,x)=>a+Number(x.valor||0),0)).toFixed(2);
+    syncTotalContrato(e);
   }
   fecharQuitacaoSePago(e);
-  if(atual){limparPag();render();alert(menor&&dest.length?'Pagamento atualizado e diferença diluída nas parcelas restantes.':'Pagamento atualizado.');return;}
+  if(atual){limparPag();render();alert(menor&&dest.length?'Pagamento atualizado e diferença diluída nas parcelas restantes.':'Pagamento atualizado.');perguntarRenovaSemanal(eid);return;}
   $('pValor').value='';$('pObs').value='';
   render();
   if(menor&&dest.length)alert('Pagamento registrado. A diferença de '+brl(falta)+' foi diluída nas parcelas restantes.');
   perguntarMultaPagamento(eid,d);
+  perguntarRenovaSemanal(eid);
 };
 window.excluirPag=id=>{if(currentUser?.papel==='funcionario')return alert('Funcionário não pode excluir pagamentos.');const p=db.pagamentos.find(x=>x.id===id);if(!p)return;if(!confirm(`Excluir ${ehMulta(p)?'a multa':'o pagamento'} de ${brl(p.valor)}?`))return;db.pagamentos=db.pagamentos.filter(x=>x.id!==id);render()};
 function download(nome,txt,tipo){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:tipo}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}function csv(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(';')).join('\n')}
