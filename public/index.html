@@ -662,8 +662,7 @@ function aplicarRenova(){
 };
 function botoesPasta(e){
   const p=pastaEmp(e);
-  const abater=saldo(e)>.01?`<button type="button" class="green" onclick="abrirAbater('${e.id}')">Abater</button> `:'';
-  return `${p!=='ativo'?`<button class="gray" onclick="moverEmpPasta('${e.id}','ativo')">Ativo</button> `:''}${p!=='negociado'?`<button onclick="moverEmpPasta('${e.id}','negociado')">Negociado</button> `:''}${p!=='complicado'?`<button class="red" onclick="moverEmpPasta('${e.id}','complicado')">Complicado</button> `:''}<button type="button" onclick="renovarParcelas('${e.id}')">Renovar</button> ${abater}`;
+  return `${p!=='ativo'?`<button class="gray" onclick="moverEmpPasta('${e.id}','ativo')">Ativo</button> `:''}${p!=='negociado'?`<button onclick="moverEmpPasta('${e.id}','negociado')">Negociado</button> `:''}${p!=='complicado'?`<button class="red" onclick="moverEmpPasta('${e.id}','complicado')">Complicado</button> `:''}<button type="button" onclick="renovarParcelas('${e.id}')">Renovar</button> `;
 }
 function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(capitalPendente(e)>.01)return '';if(!todasParcelasPagas(e))return '';const pags=db.pagamentos.filter(p=>p.empId===e.id&&p.data).sort((a,b)=>a.data.localeCompare(b.data));return pags.length?pags[pags.length-1].data:''}
 function badge(e){const s=statusEmp(e);return `<span class="badge ${s==='Quitado'?'paid':s==='Atrasado'?'late':'open'}">${s}</span>`}
@@ -692,7 +691,7 @@ function classificaEmp(e){
 }
 function itemResumoEmp(e){
   const pc=primeiroPendente(e);
-  const acoes=`<div class="actions"><button class="green" onclick="verCliente('${e.clienteId}')">Ver</button>${atrasado(e)?` <button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar</button> <button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago</button>`:''}</div>`;
+  const acoes=`<div class="actions"><button class="green" onclick="verCliente('${e.clienteId}')">Ver</button> <button class="green" onclick="registrarPagEmp('${e.id}')">💳 Pagamento</button>${atrasado(e)?` <button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar</button>`:''}</div>`;
   return `<div class="notice ${classificaEmp(e)==='vencido'?'late':''}"><b>${esc(nome(e.clienteId))}</b> — ${rotuloFreq(e.freq)} — saldo ${brl(saldo(e))}${pc?` — venc. ${dataBR(pc.data)}`:''} ${badge(e)}${acoes}</div>`;
 }
 function renderResumoListas(){
@@ -714,7 +713,7 @@ function renderResumoListas(){
   let pend=[];
   abertos.forEach(e=>e.parcelas.forEach(p=>{const r=restanteParcela(e,p);if(r>.009)pend.push({e,p,r})}));
   pend.sort((a,b)=>a.p.data.localeCompare(b.p.data));
-  if($('alerts'))$('alerts').innerHTML=pend.length?pend.slice(0,30).map(x=>`<div class="notice ${x.p.data<=hoje()?'late':''}"><b>${esc(nome(x.e.clienteId))}</b> — Parcela ${x.p.n} — ${dataBR(x.p.data)} — ${brl(x.r)} ${x.p.data<=hoje()?`<b>VENCIDA</b> <button class="green" onclick="pagoRenovar('${x.e.id}')">✅ Marcar pago</button> <button class="green" onclick="cobrarWhatsApp('${x.e.id}')">💬 Cobrar no WhatsApp</button>`:'pendente'}</div>`).join(''):'Nenhum vencimento pendente neste tipo.';
+  if($('alerts'))$('alerts').innerHTML=pend.length?pend.slice(0,30).map(x=>`<div class="notice ${x.p.data<=hoje()?'late':''}"><b>${esc(nome(x.e.clienteId))}</b> — Parcela ${x.p.n} — ${dataBR(x.p.data)} — ${brl(x.r)} ${x.p.data<=hoje()?`<b>VENCIDA</b> <button class="green" onclick="registrarPagEmp('${x.e.id}')">💳 Registrar pagamento</button> <button class="green" onclick="cobrarWhatsApp('${x.e.id}')">💬 Cobrar no WhatsApp</button>`:'pendente'}</div>`).join(''):'Nenhum vencimento pendente neste tipo.';
 }
 function abrirAba(id){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===id));document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('active',s.id===id))}
 function renderSaude(){
@@ -796,13 +795,20 @@ function renderParc(){
   const pagEdit=editPag?db.pagamentos.find(p=>String(p.id)===String(editPag)):null;
   if(!e){$('pParc').innerHTML='<option value="">Selecione o empréstimo</option>';return;}
   const ops=[...e.parcelas].filter(p=>restanteParcela(e,p)>.01||(pagEdit&&String(pagEdit.parcId)===String(p.id))).sort((a,b)=>a.n-b.n);
-  $('pParc').innerHTML='<option value="">Selecione a parcela paga</option>'+ops.map(p=>`<option value="${p.id}">Parcela ${p.n} — ${dataBR(p.data)} — ${brl(restanteParcela(e,p))}</option>`).join('');
+  let html='<option value="">Selecione a parcela paga</option>'+ops.map(p=>`<option value="${p.id}">Parcela ${p.n} — ${dataBR(p.data)} — ${brl(restanteParcela(e,p))}</option>`).join('');
+  if(capitalPendente(e)>.01) html+=`<option value="_capital_">💰 Pagamento de capital — ${brl(capitalPendente(e))}</option>`;
+  $('pParc').innerHTML=html;
   if(pagEdit&&pagEdit.parcId)$('pParc').value=pagEdit.parcId;
 }
 function preencherValorParcela(){
   if(editPag)return;
   const e=acharEmp($('pEmp').value);
-  const pc=e?.parcelas.find(x=>String(x.id)===String($('pParc').value));
+  const sel=$('pParc').value;
+  if(sel==='_capital_'){
+    $('pValor').value=capitalPendente(e)>0?capitalPendente(e).toFixed(2):'';
+    return;
+  }
+  const pc=e?.parcelas.find(x=>String(x.id)===String(sel));
   if(!pc){$('pValor').value='';return;}
   const r=restanteParcela(e,pc);
   $('pValor').value=r>0?r.toFixed(2):'';
@@ -816,7 +822,7 @@ function renderEmp(){
   const q=($('buscaEmp')&&$('buscaEmp').value||'').trim();
   const vazio={ativo:q?'Nenhum empréstimo ativo encontrado nesta busca.':'Nenhum empréstimo ativo nesta cidade.',negociado:q?'Nenhum empréstimo negociado encontrado nesta busca.':'Nenhum empréstimo negociado.',complicado:q?'Nenhum empréstimo complicado encontrado nesta busca.':'Nenhum empréstimo complicado.'};
   const pg=fatia(lista,pageEmp);pageEmp=pg.pag;
-  $('tbEmp').innerHTML=pg.itens.length?pg.itens.map(e=>`<tr><td>${esc(nome(e.clienteId))}</td><td>${rotuloFreq(e.freq)}</td><td>${brl(e.principal)}</td><td>${brl(jurosEmp(e))}</td><td>${brl(pagoFaseAtual(e))}</td><td>${brl(saldo(e))}</td><td class="${dataProxVenc(e)<hoje()&&saldo(e)>.01?'late':''}">${textoVenc(e)}</td><td>${badge(e)} ${badgePasta(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</td><td>${btnEdit('editarEmp',e.id)} ${botoesPasta(e)} ${func?`${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> `:''}<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`:`<button class="green" onclick="verCliente('${e.clienteId}')">Detalhes</button> ${saldo(e)>.01?`<button class="green" onclick="pagoRenovar('${e.id}')">✅ Pago / Próximo vencimento</button> ${atrasado(e)?`<button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar no WhatsApp</button> `:''}<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button> <button onclick="continuarEmp('${e.id}')">Continuar</button>`:`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button>`}`} <button class="red" onclick="excluirEmp('${e.id}')">Excluir</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">${vazio[empAba]||vazio.ativo}</td></tr>`;
+  $('tbEmp').innerHTML=pg.itens.length?pg.itens.map(e=>`<tr><td>${esc(nome(e.clienteId))}</td><td>${rotuloFreq(e.freq)}</td><td>${brl(e.principal)}</td><td>${brl(jurosEmp(e))}</td><td>${brl(pagoFaseAtual(e))}</td><td>${brl(saldo(e))}</td><td class="${dataProxVenc(e)<hoje()&&saldo(e)>.01?'late':''}">${textoVenc(e)}</td><td>${badge(e)} ${badgePasta(e)}${dataQuitacao(e)?`<div class="small">Quitado em ${dataBR(dataQuitacao(e))}</div>`:''}</td><td>${btnEdit('editarEmp',e.id)} ${botoesPasta(e)} ${saldo(e)>.01?`<button class="green" onclick="registrarPagEmp('${e.id}')">💳 Registrar pagamento</button> ${atrasado(e)?`<button class="green" onclick="cobrarWhatsApp('${e.id}')">💬 Cobrar</button> `:''}<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar</button> <button onclick="continuarEmp('${e.id}')">Continuar</button>`:''} <button class="green" onclick="verCliente('${e.clienteId}')">Detalhes</button> <button onclick="novoEmp('${e.clienteId}')">Novo empréstimo</button> <button class="red" onclick="excluirEmp('${e.id}')">Excluir</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">${vazio[empAba]||vazio.ativo}</td></tr>`;
   htmlPaginacao('pagEmp',pg.pag,pg.total,pg.qtd,'irPagEmp');
 }
 function renderPag(){
@@ -1175,6 +1181,16 @@ window.pagoRenovar=id=>{
 };
 
 
+window.registrarPagEmp=id=>{
+  abrirAba('pagamentos');
+  setTimeout(()=>{
+    $('pEmp').value=id;
+    renderParc();
+    $('pValor').value='';
+    $('pData').value=hoje();
+    document.querySelector('#pagamentos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+  },50);
+};
 $('pEmp').onchange=()=>{renderParc();if(!editPag)$('pValor').value='';};
 $('pParc').onchange=preencherValorParcela;
 function limparPag(){
@@ -1337,10 +1353,27 @@ $('salvarPag').onclick=()=>{
     limparPag();render();alert('Multa atualizada.');return;
   }
   if(!eid)return alert('Selecione o empréstimo.');
-  if(!pid)return alert('Selecione a parcela que foi paga.');
+  if(!pid)return alert('Selecione a parcela ou tipo de pagamento.');
   if(v<=0||!d)return alert('Preencha o valor e a data do pagamento.');
-  const e=db.emprestimos.find(x=>x.id===eid),pc=e?.parcelas.find(x=>x.id===pid);
-  if(!e||!pc)return alert('Empréstimo ou parcela não encontrados.');
+  const e=db.emprestimos.find(x=>x.id===eid);
+  if(!e)return alert('Empréstimo não encontrado.');
+  if(pid==='_capital_'){
+    const cap=capitalPendente(e);
+    if(cap<=0)return alert('Não há capital pendente neste empréstimo.');
+    if(v>cap+0.01)return alert('O valor não pode ser maior que o capital pendente ('+brl(cap)+').');
+    const obs=$('pObs').value||'Pagamento de capital';
+    if(!confirm('Confirmar pagamento de '+brl(v)+' no capital de '+nome(e.clienteId)+'? O valor emprestado será reduzido de '+brl(e.principal)+' para '+brl(Math.max(0,e.principal-v))+'.'))return;
+    e.principal=Math.max(0,+(Number(e.principal)-v).toFixed(2));
+    syncTotalContrato(e);
+    db.pagamentos.push({id:uid(),empId:eid,parcId:null,valor:v,data:d,forma:$('pForma').value,obs:obs,tipo:'pagamento_capital'});
+    fecharQuitacaoSePago(e);
+    $('pValor').value='';$('pObs').value='';
+    render();
+    alert('Pagamento de capital registrado. Valor emprestado agora é '+brl(e.principal)+'.');
+    return;
+  }
+  const pc=e.parcelas.find(x=>x.id===pid);
+  if(!pc)return alert('Parcela não encontrada.');
   const jaPago=pagoParc(eid,pid)-(atual&&String(atual.parcId)===String(pid)?Number(atual.valor||0):0);
   const r=Math.max(0,+(Number(pc.valor)-jaPago).toFixed(2));
   if(v>r+0.01){
