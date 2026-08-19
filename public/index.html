@@ -18,6 +18,7 @@
 <div id="modalConfirmaEmp" class="modal hidden"><div class="modal-box"><h2>Cliente já possui empréstimo</h2><p class="small" id="confirmaEmpTexto"></p><div id="confirmaEmpLista" class="notice late" style="margin:12px 0"></div><p class="small">Deseja criar um novo empréstimo mesmo assim?</p><div class="actions"><button type="button" class="green" id="verDetalhesEmpExistente">Ver detalhes</button><button type="button" id="confirmarCriarEmp">Confirmar e criar</button><button type="button" class="gray" id="cancelarCriarEmp">Cancelar</button></div></div></div>
 <div id="modalAbater" class="modal hidden"><div class="modal-box"><h2>Abater saldo</h2><p class="small" id="abaterResumo"></p><input type="hidden" id="abaterEmpId"><div class="grid"><div><label>Valor pago para abater</label><input id="abaterValor" type="number" step="0.01" min="0.01"></div></div><div id="abaterPreview" class="notice" style="margin-top:12px">Digite o valor para ver as novas parcelas.</div><p class="small">O valor informado reduz o saldo e as próximas parcelas são recalculadas automaticamente.</p><div class="actions"><button type="button" id="confirmarAbater">Confirmar abatimento</button><button type="button" class="gray" id="cancelarAbater">Cancelar</button></div></div></div>
 <div id="modalExcessoPag" class="modal hidden"><div class="modal-box"><h2>Valor maior que a parcela</h2><p class="small" id="excessoPagTexto"></p><p class="small">O que deseja fazer com o valor extra?</p><div class="actions"><button type="button" id="excessoAbaterEmp">Abater no valor emprestado</button><button type="button" class="green" id="excessoProxParc">Diminuir da próxima parcela</button><button type="button" class="gray" id="cancelarExcessoPag">Cancelar</button></div></div></div>
+<div id="modalFaltaPag" class="modal hidden"><div class="modal-box"><h2>Valor menor que a parcela</h2><p class="small" id="faltaPagTexto"></p><p class="small">O que deseja fazer com a diferença?</p><div class="actions"><button type="button" class="green" id="faltaProxParc">Incluir na próxima parcela</button><button type="button" id="faltaDiluir">Diluir nas parcelas restantes</button><button type="button" class="gray" id="faltaParcial">Registrar pagamento parcial</button><button type="button" class="gray" id="cancelarFaltaPag">Cancelar</button></div></div></div>
 <div id="loginScreen" class="login-screen">
   <div class="login-box" id="loginBoxPrincipal">
     <h1><button type="button" class="login-secret" id="abrirLoginFranca">🔐</button> Empréstimos — Imperatriz/MA</h1>
@@ -117,7 +118,7 @@
 })();
 const $=id=>document.getElementById(id);
 const BACKUP_INICIAL={clientes:[],emprestimos:[],pagamentos:[],cidades:[]};
-let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pendenteExcessoPag=null;
+let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pendenteExcessoPag=null,pendenteFaltaPag=null;
 const POR_PAGINA=10;
 const btnEdit=(fn,id)=>`<button class="icon" title="Editar" onclick="${fn}('${id}')">✎</button>`;
 function fatia(lista,pag){
@@ -1251,6 +1252,54 @@ function fecharExcessoPag(){
 $('excessoAbaterEmp')?.addEventListener('click',()=>concluirPagamentoExcesso('emprestado'));
 $('excessoProxParc')?.addEventListener('click',()=>concluirPagamentoExcesso('proxima'));
 $('cancelarExcessoPag')?.addEventListener('click',fecharExcessoPag);
+function fecharFaltaPag(){pendenteFaltaPag=null;$('modalFaltaPag').classList.add('hidden');}
+function incluirFaltaNaProxima(e,pc,falta){
+  const dest=parcelasParaDiluir(e,pc);
+  if(!dest.length)return;
+  const prox=dest[0];
+  prox.valor=+(Number(prox.valor)+falta).toFixed(2);
+  syncTotalContrato(e);
+}
+function concluirPagamentoFalta(modo){
+  const d=pendenteFaltaPag;if(!d)return;
+  const e=acharEmp(d.eid);if(!e)return alert('Empréstimo não encontrado.');
+  const pc=e.parcelas.find(x=>String(x.id)===String(d.pid));
+  let obs=d.obs||'';
+  if(modo==='proxima'){
+    obs=(obs?obs+' — ':'')+'Pagamento menor: falta '+brl(d.falta)+' incluída na próxima parcela';
+  }else if(modo==='diluir'){
+    obs=(obs?obs+' — ':'')+'Pagamento menor: diferença '+brl(d.falta)+' diluída nas parcelas restantes';
+  }else{
+    obs=(obs?obs+' — ':'')+'Pagamento parcial: restante de '+brl(d.falta)+' permanece na parcela';
+  }
+  if(d.atual){
+    d.atual.empId=d.eid;d.atual.parcId=d.pid;d.atual.valor=d.valor;d.atual.data=d.data;d.atual.forma=d.forma;d.atual.obs=obs;
+  }else{
+    db.pagamentos.push({id:uid(),empId:d.eid,parcId:d.pid,valor:d.valor,data:d.data,forma:d.forma,obs:obs});
+  }
+  if(modo==='proxima'&&pc){
+    pc.valor=+(pagoParc(d.eid,d.pid)).toFixed(2);
+    incluirFaltaNaProxima(e,pc,d.falta);
+  }else if(modo==='diluir'&&pc){
+    pc.valor=+(pagoParc(d.eid,d.pid)).toFixed(2);
+    const dest=parcelasParaDiluir(e,pc);
+    diluirFaltaNasParcelas(dest,d.falta);
+    syncTotalContrato(e);
+  }
+  fecharQuitacaoSePago(e);
+  fecharFaltaPag();
+  const msgs={proxima:'Pagamento registrado. A diferença foi incluída na próxima parcela.',diluir:'Pagamento registrado. A diferença foi diluída nas parcelas restantes.',parcial:'Pagamento parcial registrado. O restante permanece nesta parcela.'};
+  if(d.atual){limparPag();render();alert(msgs[modo]||'Pagamento atualizado.');perguntarRenovaSemanal(d.eid);return;}
+  $('pValor').value='';$('pObs').value='';
+  render();
+  alert(msgs[modo]||'Pagamento registrado.');
+  perguntarMultaPagamento(d.eid,d.data);
+  perguntarRenovaSemanal(d.eid);
+}
+$('faltaProxParc')?.addEventListener('click',()=>concluirPagamentoFalta('proxima'));
+$('faltaDiluir')?.addEventListener('click',()=>concluirPagamentoFalta('diluir'));
+$('faltaParcial')?.addEventListener('click',()=>concluirPagamentoFalta('parcial'));
+$('cancelarFaltaPag')?.addEventListener('click',fecharFaltaPag);
 $('salvarPag').onclick=()=>{
   const eid=$('pEmp').value,pid=$('pParc').value,v=+$('pValor').value,d=$('pData').value;
   const atual=editPag?db.pagamentos.find(x=>x.id===editPag):null;
@@ -1273,31 +1322,27 @@ $('salvarPag').onclick=()=>{
     $('modalExcessoPag').classList.remove('hidden');
     return;
   }
-  let obs=$('pObs').value||'';
   const menor=v+0.01<r;
   const falta=menor?+(r-v).toFixed(2):0;
-  const dest=menor?parcelasParaDiluir(e,pc):[];
   if(menor){
-    if(dest.length){
-      if(!confirm('O pagamento é menor que a parcela '+pc.n+' ('+brl(r)+'). A diferença de '+brl(falta)+' será diluída nas '+dest.length+' parcela(s) restante(s). Continuar?'))return;
-      obs=(obs?obs+' — ':'')+'Pagamento menor: diferença '+brl(falta)+' diluída nas parcelas restantes';
-    }else if(!confirm('O pagamento é menor que a parcela e não há outras parcelas para diluir. A parcela '+pc.n+' ficará com restante de '+brl(falta)+'. Continuar?'))return;
+    pendenteFaltaPag={eid,pid,valor:v,data:d,forma:$('pForma').value,obs:$('pObs').value||'',atual,falta,restante:r,pc};
+    const dest=parcelasParaDiluir(e,pc);
+    $('faltaPagTexto').textContent='A parcela '+pc.n+' é de '+brl(r)+'. Foi informado '+brl(v)+', faltam '+brl(falta)+'.';
+    $('faltaProxParc').classList.toggle('hidden',dest.length===0);
+    $('faltaDiluir').classList.toggle('hidden',dest.length<2);
+    $('modalFaltaPag').classList.remove('hidden');
+    return;
   }
+  let obs=$('pObs').value||'';
   if(atual){
     atual.empId=eid;atual.parcId=pid;atual.valor=v;atual.data=d;atual.forma=$('pForma').value;atual.obs=obs;
   }else{
     db.pagamentos.push({id:uid(),empId:eid,parcId:pid,valor:v,data:d,forma:$('pForma').value,obs:obs});
   }
-  if(menor&&dest.length){
-    pc.valor=+(pagoParc(eid,pid)).toFixed(2);
-    diluirFaltaNasParcelas(dest,falta);
-    syncTotalContrato(e);
-  }
   fecharQuitacaoSePago(e);
-  if(atual){limparPag();render();alert(menor&&dest.length?'Pagamento atualizado e diferença diluída nas parcelas restantes.':'Pagamento atualizado.');perguntarRenovaSemanal(eid);return;}
+  if(atual){limparPag();render();alert('Pagamento atualizado.');perguntarRenovaSemanal(eid);return;}
   $('pValor').value='';$('pObs').value='';
   render();
-  if(menor&&dest.length)alert('Pagamento registrado. A diferença de '+brl(falta)+' foi diluída nas parcelas restantes.');
   perguntarMultaPagamento(eid,d);
   perguntarRenovaSemanal(eid);
 };
