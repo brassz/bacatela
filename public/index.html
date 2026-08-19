@@ -642,19 +642,22 @@ function botoesPasta(e){
 function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(capitalPendente(e)>.01)return '';if(!todasParcelasPagas(e))return '';const pags=db.pagamentos.filter(p=>p.empId===e.id&&p.data).sort((a,b)=>a.data.localeCompare(b.data));return pags.length?pags[pags.length-1].data:''}
 function badge(e){const s=statusEmp(e);return `<span class="badge ${s==='Quitado'?'paid':s==='Atrasado'?'late':'open'}">${s}</span>`}
 const DADOS_COBRANCA={banco:'Nubank',titular:'Alg comercial ou Al gavioli lanches',pix:'16991753893',pixExibir:'(16) 99175-3893'};
+const DADOS_COBRANCA_FRANCA={pixExibir:'CNPJ 60.495.244/0001-14',titular:'Af Capel Serviços de Cobrança Ltda.'};
 function telefoneWhatsApp(tel){let n=String(tel||'').replace(/\D/g,'');if((n.length===10||n.length===11)&&!n.startsWith('55'))n='55'+n;return n}
+function dadosPixCobranca(){
+  if(currentUser?.portal==='franca'){
+    return `Pix - ${DADOS_COBRANCA_FRANCA.pixExibir}\n${DADOS_COBRANCA_FRANCA.titular}`;
+  }
+  return `💳 PIX – ${DADOS_COBRANCA.banco}\nTitular: ${DADOS_COBRANCA.titular}\nChave: ${DADOS_COBRANCA.pixExibir}`;
+}
 function textoCobranca(e){
   const c=db.clientes.find(x=>x.id===e.clienteId);if(!c)return '';
   const vencidas=e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).sort((a,b)=>a.data.localeCompare(b.data));
   if(!vencidas.length)return '';
   const primeira=vencidas[0];
-  if(currentUser?.portal==='franca'){
-    return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nPagamento Parcela ${primeira.n}\nValor da parcela: ${brl(restanteParcela(e,primeira))}\n\nDados para pagamento:\nPix - CNPJ 60.495.244/0001-14\nAf Capel Serviços de Cobrança Ltda.`;
-  }
-  const juros=jurosEmp(e);
-  const quitacao=+(Number(e.principal||0)+juros).toFixed(2);
-  const minimo=restanteParcela(e,primeira);
-  return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nQuitação total (emprestado + juros): ${brl(quitacao)}\nValor dos juros: ${brl(juros)}\nPagamento mínimo (parcela): ${brl(minimo)}\n\nDados para pagamento:\n💳 PIX – ${DADOS_COBRANCA.banco}\nTitular: ${DADOS_COBRANCA.titular}\nChave: ${DADOS_COBRANCA.pixExibir}\n\nApós o pagamento, por favor envie o comprovante. Obrigado.`;
+  const valorEmprestado=Number(e.principal||0);
+  const valorParcela=restanteParcela(e,primeira);
+  return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nPagamento Parcela ${primeira.n}\nValor emprestado: ${brl(valorEmprestado)}\nValor da parcela: ${brl(valorParcela)}\n\nDados para pagamento:\n${dadosPixCobranca()}\n\nApós o pagamento, por favor envie o comprovante. Obrigado.`;
 }
 window.cobrarWhatsApp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;if(!atrasado(e))return alert('Este empréstimo não possui pagamento vencido.');const c=db.clientes.find(x=>x.id===e.clienteId);const tel=telefoneWhatsApp(c?.tel);if(!tel)return alert('Cadastre o telefone do cliente para enviar a cobrança pelo WhatsApp.');const msg=encodeURIComponent(textoCobranca(e));window.open(`https://wa.me/${tel}?text=${msg}`,'_blank')}
 function classificaEmp(e){
