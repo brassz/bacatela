@@ -157,9 +157,11 @@ function clienteBate(idOuCliente,q){
   return txt.toLowerCase().includes(q);
 }
 function ehSemanal(e){return (e?.freq||'weekly')==='weekly'}
-function parcelasSoJuros(e){return ehSemanal(e)&&(e.parcelasTipo==='juros')}
+function ehJurosSeparado(e){return (e?.freq||'weekly')==='weekly'||(e?.freq)==='monthly'}
+function parcelasSoJuros(e){return ehJurosSeparado(e)&&(e.parcelasTipo==='juros')}
 function capitalPendente(e){return (!parcelasSoJuros(e)||e.dataQuitacao)?0:Math.max(0,Number(e.principal||0))}
-function valorMontagemParcelas(freq,juros,total){return freq==='weekly'?Math.max(0,Number(juros)||0):Number(total)||0}
+function valorMontagemParcelas(freq,juros,total){return (freq==='weekly'||freq==='monthly')?Math.max(0,Number(juros)||0):Number(total)||0}
+function qtdPadraoFreq(f){return f==='weekly'?4:f==='monthly'?1:1}
 function dataBR(s){if(!s)return '';const [a,m,d]=s.split('-');return `${d}/${m}/${a}`}
 const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -355,6 +357,8 @@ function atualizarSaldoContratoForm(){
   if(f==='weekly'){
     const parc=j>0?+(j/4).toFixed(2):0;
     $('eSaldoContrato').textContent='Semanal: 4 parcelas de '+brl(parc)+' (somente juros '+brl(j)+'). Valor emprestado '+brl(p)+' permanece até quitar. Após as 4, pergunta se deseja renovar.';
+  }else if(f==='monthly'){
+    $('eSaldoContrato').textContent='Mensal: 1 parcela de '+brl(j)+' (somente juros). Valor emprestado '+brl(p)+' permanece até quitar. Após pagar, pergunta se deseja renovar. Se não renovar, o saldo vira '+brl(p)+'.';
   }else{
     $('eSaldoContrato').textContent='Saldo do contrato: '+brl(p+j)+' (emprestado '+brl(p)+' + juros '+brl(j)+')';
   }
@@ -488,11 +492,17 @@ function aplicarAbater(){
   render();
   alert(`Abatimento de ${brl(v)} registrado. Novas parcelas atualizadas.`);
 }
-function htmlTabelaParcelasHist(linhas,nPagas,nTotal){
-  const id='hp'+uid();
-  const rotulo=nTotal?`Ver parcelas (${nPagas}/${nTotal} pagas)`:'Ver parcelas';
-  return `<div class="hist-parc-box"><button type="button" class="gray" id="btn_${id}" onclick="toggleHistParcelas('${id}')">${rotulo}</button>
-    <div id="${id}" class="table hidden" style="margin-top:10px"><table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div></div>`;
+function htmlTabelaParcelasHist(linhas,nPagas,nTotal,pagamentos){
+  const idP='hp'+uid(),idPg='hpg'+uid();
+  const rotuloParc=nTotal?`Ver parcelas (${nPagas}/${nTotal} pagas)`:'Ver parcelas';
+  const pags=(pagamentos||[]).filter(p=>!ehMulta(p)&&!ehMeta(p));
+  const linhasPag=pags.length?pags.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(p=>`<tr><td>${dataBR(p.data)}</td><td>${brl(p.valor)}</td><td>${esc(p.forma||'')}</td><td>${esc(p.obs||'')}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nenhum pagamento registrado.</td></tr>';
+  return `<div class="hist-parc-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+    <div><button type="button" class="gray" id="btn_${idP}" onclick="toggleHistParcelas('${idP}')">${rotuloParc}</button>
+    <div id="${idP}" class="table hidden" style="margin-top:10px"><table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div></div>
+    <div><button type="button" class="gray" id="btn_${idPg}" onclick="toggleHistParcelas('${idPg}')">Ver pagamentos (${pags.length})</button>
+    <div id="${idPg}" class="table hidden" style="margin-top:10px"><table><thead><tr><th>Data</th><th>Valor</th><th>Forma</th><th>Observação</th></tr></thead><tbody>${linhasPag}</tbody></table></div></div>
+  </div>`;
 }
 window.toggleHistParcelas=id=>{
   const box=$(id);if(!box)return;
@@ -502,7 +512,8 @@ window.toggleHistParcelas=id=>{
   if(btn){
     const m=String(btn.textContent||'').match(/\((.+)\)/);
     const extra=m?' ('+m[1]+')':'';
-    btn.textContent=(aberto?'Ver parcelas':'Ocultar parcelas')+extra;
+    const base=String(btn.textContent||'').replace(/^(Ver |Ocultar )/,'').replace(/\s*\(.+\)/,'');
+    btn.textContent=(aberto?'Ver ':'Ocultar ')+base+extra;
   }
 };
 function htmlFaseHistorico(titulo,fase,opts){
@@ -521,7 +532,7 @@ function htmlFaseHistorico(titulo,fase,opts){
     return `<div class="loan-box fechado"><div class="loan-title"><h3>${esc(titulo)}</h3><div><span class="badge fechado">Fechado</span></div></div>
       <p class="small">Empréstimo anterior — como estava antes da negociação${fase.em?(' (fechado em '+dataBR(fase.em)+')'):''} • ${rotuloFreq(fase.freq)}</p>
       <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Juros:</b> ${brl(Math.max(0,Number(fase.total||0)-Number(fase.principal||0)))} &nbsp; <b>Saldo do contrato:</b> ${brl(fase.total)} &nbsp; <b>Recebido:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo ao fechar:</b> ${brl(fase.saldo||0)}</p>
-      ${htmlTabelaParcelasHist(linhas,nPagas,pars.length)}</div>`;
+      ${htmlTabelaParcelasHist(linhas,nPagas,pars.length,pags)}</div>`;
   }
   const linhas=pars.length?pars.map(p=>{
     const pg=pagoDe(p.id);
@@ -532,7 +543,7 @@ function htmlFaseHistorico(titulo,fase,opts){
   return `<div class="loan-box"><div class="loan-title"><h3>${esc(titulo)}</h3><div>${fase.pasta==='negociado'?'<span class="badge open">Negociado</span>':fase.pasta==='complicado'?'<span class="badge late">Complicado</span>':'<span class="badge open">Ativo</span>'}</div></div>
     <p class="small">${fase.em?('Registrado em '+dataBR(fase.em)+' • '):''}${rotuloFreq(fase.freq)}</p>
     <p><b>Emprestado:</b> ${brl(fase.principal)} &nbsp; <b>Juros:</b> ${brl(Math.max(0,Number(fase.total||0)-Number(fase.principal||0)))} &nbsp; <b>Saldo do contrato:</b> ${brl(fase.total)} &nbsp; <b>Recebido nesta fase:</b> ${brl(fase.recebido||0)} &nbsp; <b>Saldo:</b> ${brl(fase.saldo||0)}</p>
-    ${htmlTabelaParcelasHist(linhas,nPagas,pars.length)}</div>`;
+    ${htmlTabelaParcelasHist(linhas,nPagas,pars.length,pags)}</div>`;
 }
 window.moverEmpPasta=(id,pasta)=>{
   const e=acharEmp(id);if(!e)return;
@@ -588,15 +599,17 @@ window.renovarParcelas=id=>{
 };
 function fecharRenova(){$('modalRenova').classList.add('hidden')}
 function cicloJurosSemanalPago(e){
-  return ehSemanal(e)&&e.parcelasTipo==='juros'&&!e.dataQuitacao&&(e.parcelas||[]).length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)&&capitalPendente(e)>.01;
+  return ehJurosSeparado(e)&&e.parcelasTipo==='juros'&&!e.dataQuitacao&&(e.parcelas||[]).length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)&&capitalPendente(e)>.01;
 }
 function renovarCicloSemanal(e,dataInicio){
   const j=jurosEmp(e);
-  if(j<=0)return alert('Não há juros para renovar o ciclo semanal.');
+  if(j<=0)return alert('Não há juros para renovar o ciclo.');
   if(!Array.isArray(e.historico)) e.historico=[];
   e.historico.push(snapshotFase(e));
-  const d=dataInicio&&/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)?dataInicio:proximoPasso(hoje(),'weekly');
-  e.parcelas=montarParcelas(j,4,d,'weekly');
+  const freq=e.freq||'weekly';
+  const qtd=freq==='monthly'?1:4;
+  const d=dataInicio&&/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)?dataInicio:proximoPasso(hoje(),freq);
+  e.parcelas=montarParcelas(j,qtd,d,freq);
   e.parcelasTipo='juros';
   e.primeiroVencimento=d;
   e.renovadoEm=hoje();
@@ -606,24 +619,36 @@ function renovarCicloSemanal(e,dataInicio){
 function perguntarRenovaSemanal(eid){
   const e=acharEmp(eid);if(!e||!cicloJurosSemanalPago(e))return;
   const j=jurosEmp(e);
-  const parc=+(j/4).toFixed(2);
-  if(confirm(`As 4 parcelas de juros de ${nome(e.clienteId)} foram pagas.\n\nValor emprestado ${brl(e.principal)} continua em aberto.\n\nDeseja renovar por mais 4 semanas (${brl(parc)} por parcela)?`)){
-    renovarCicloSemanal(e,proximoPasso(hoje(),'weekly'));
+  const freq=e.freq||'weekly';
+  const qtd=freq==='monthly'?1:4;
+  const parc=+(j/qtd).toFixed(2);
+  const label=freq==='monthly'?'mês':'4 semanas';
+  if(confirm(`As parcelas de juros de ${nome(e.clienteId)} foram pagas.\n\nValor emprestado ${brl(e.principal)} continua em aberto.\n\nDeseja renovar por mais ${label} (${brl(parc)} por parcela)?`)){
+    renovarCicloSemanal(e,proximoPasso(hoje(),freq));
     render();
-    alert('Empréstimo semanal renovado. Foram geradas 4 novas parcelas de juros. O valor emprestado não foi alterado.');
+    alert('Empréstimo renovado. Novas parcelas de juros geradas. O valor emprestado não foi alterado.');
   }else{
-    alert('Ciclo encerrado. O valor emprestado de '+brl(e.principal)+' permanece em aberto. Use Quitar para liquidar o capital.');
+    if(!Array.isArray(e.historico)) e.historico=[];
+    e.historico.push(snapshotFase(e));
+    const d=proximoPasso(hoje(),freq);
+    e.parcelas=montarParcelas(Number(e.principal),1,d,freq);
+    e.parcelasTipo='total';
+    e.primeiroVencimento=d;
+    e.total=+Number(e.principal).toFixed(2);
+    if(e.dataQuitacao) delete e.dataQuitacao;
+    render();
+    alert('Não renovado. O saldo de '+brl(e.principal)+' foi gerado como parcela para o próximo vencimento.');
   }
 }
 function aplicarRenova(){
   const e=acharEmp($('renovaEmpId').value);if(!e)return;
   const d=$('renovaData').value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Informe a data do próximo vencimento.');
-  if(ehSemanal(e)&&e.parcelasTipo==='juros'&&todasParcelasPagas(e)&&capitalPendente(e)>.01){
+  if(ehJurosSeparado(e)&&e.parcelasTipo==='juros'&&todasParcelasPagas(e)&&capitalPendente(e)>.01){
     renovarCicloSemanal(e,d);
     fecharRenova();
     render();
-    alert('Ciclo semanal renovado. 4 novas parcelas de juros. O valor emprestado permanece.');
+    alert('Ciclo renovado. Novas parcelas de juros geradas. O valor emprestado permanece.');
     return;
   }
   const pars=[...(e.parcelas||[])].sort((a,b)=>a.n-b.n);
@@ -839,7 +864,7 @@ function renderPaginaHistorico(){
     const atual={
       em:hoje(), pasta:pastaEmp(e), principal:e.principal, total:e.total, freq:e.freq,
       parcelas:e.parcelas||[],
-      pagamentos:db.pagamentos.filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)&&(!p.parcId||(e.parcelas||[]).some(x=>String(x.id)===String(p.parcId)))),
+      pagamentos:db.pagamentos.filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)),
       recebido:pagoFaseAtual(e), saldo:saldo(e)
     };
     const antigas=fases.map((f,n)=>htmlFaseHistorico(`Empréstimo antigo ${n+1} — ${esc(nome(e.clienteId))}`,f,{fechado:true})).join('');
@@ -859,7 +884,7 @@ function renderHistorico(id){
   $('histResumo').innerHTML=`<div class="m"><small>Empréstimos</small><b>${lista.length}</b></div><div class="m"><small>Emprestado</small><b>${brl(lista.reduce((a,e)=>a+Number(e.principal),0))}</b></div><div class="m"><small>Recebido</small><b>${brl(lista.reduce((a,e)=>a+pagoEmp(e.id),0))}</b></div><div class="m"><small>Saldo</small><b>${brl(lista.reduce((a,e)=>a+saldo(e),0))}</b></div>`;
   $('histLista').innerHTML=lista.length?lista.map((e,i)=>{
     const fases=Array.isArray(e.historico)?e.historico:[];
-    const atual={em:'',pasta:pastaEmp(e),principal:e.principal,total:e.total,freq:e.freq,parcelas:e.parcelas||[],pagamentos:db.pagamentos.filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)&&!ehMeta(p)&&(!p.parcId||(e.parcelas||[]).some(x=>String(x.id)===String(p.parcId)))),recebido:pagoFaseAtual(e),saldo:saldo(e)};
+    const atual={em:'',pasta:pastaEmp(e),principal:e.principal,total:e.total,freq:e.freq,parcelas:e.parcelas||[],pagamentos:db.pagamentos.filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)&&!ehMeta(p)),recebido:pagoFaseAtual(e),saldo:saldo(e)};
     const antigas=fases.map((f,n)=>htmlFaseHistorico('Empréstimo antigo '+(n+1),f,{fechado:true})).join('');
     return `<div>${antigas}${htmlFaseHistorico('Acordo atual — '+(rotuloFreq(e.freq)),atual)}<div class="actions">${saldo(e)<=.01?`<button onclick="novoEmp('${e.clienteId}')">Novo empréstimo para este cliente</button>`:`<button class="green" onclick="quitarEmp('${e.id}')">💰 Quitar empréstimo</button>`}</div></div>`;
   }).join(''):'<div class="empty">Nenhum empréstimo cadastrado.</div>';
@@ -992,6 +1017,7 @@ $('eJuros')?.addEventListener('input',atualizarSaldoContratoForm);
 $('eFreq')?.addEventListener('change',()=>{
   const f=$('eFreq').value;
   if(f==='weekly') $('eQtd').value=4;
+  else if(f==='monthly') $('eQtd').value=1;
   else if(!(editEmp||($('eEditId')&&$('eEditId').value))) $('eQtd').value=qtdPadraoFreq(f);
   atualizarSaldoContratoForm();
 });
@@ -1024,10 +1050,10 @@ $('salvarEmp').onclick=()=>{
   $('salvarEmp').dataset.busy='1';
   try{
     const cid=$('eCliente').value,p=+$('ePrincipal').value,j=+$('eJuros').value,d=$('eData').value,f=$('eFreq').value;
-    const q=f==='weekly'?4:Math.floor(+$('eQtd').value);
+    const q=f==='weekly'?4:f==='monthly'?1:Math.floor(+$('eQtd').value);
     const t=+(p+Math.max(0,j)).toFixed(2);
     if(!cid||p<=0||j<0||t<=0||q<1||!/^\d{4}-\d{2}-\d{2}$/.test(d))return alert('Preencha emprestado, juros e demais dados corretamente.');
-    if(f==='weekly'&&j<=0)return alert('No empréstimo semanal, informe os juros. Eles serão divididos em 4 parcelas.');
+    if((f==='weekly'||f==='monthly')&&j<=0)return alert('Informe os juros. Eles serão usados para gerar as parcelas de juros.');
     const idEdit=String(($('eEditId')&&$('eEditId').value)||editEmp||'');
     const baseParc=valorMontagemParcelas(f,j,t);
     if(idEdit){
@@ -1036,7 +1062,7 @@ $('salvarEmp').onclick=()=>{
       const atualizado=Object.assign({},e,{
         id:String(e.id),clienteId:String(cid),principal:p,total:t,freq:f,primeiroVencimento:d,
         parcelas:montarParcelas(baseParc,q,d,f,e.parcelas),pasta:pastaEmp(e),
-        parcelasTipo:f==='weekly'?'juros':'total'
+        parcelasTipo:(f==='weekly'||f==='monthly')?'juros':'total'
       });
       db.emprestimos=upsertById(db.emprestimos,atualizado);
       limparEmp();
@@ -1055,9 +1081,9 @@ $('salvarEmp').onclick=()=>{
 };
 let pendenteNovoEmp=null;
 function criarNovoEmp(dados){
-  const q=dados.freq==='weekly'?4:dados.qtd;
+  const q=dados.freq==='weekly'?4:dados.freq==='monthly'?1:dados.qtd;
   const baseParc=valorMontagemParcelas(dados.freq,dados.juros,dados.total);
-  const novo={id:uid(),clienteId:String(dados.clienteId),principal:dados.principal,total:dados.total,freq:dados.freq,primeiroVencimento:dados.primeiroVencimento,parcelas:montarParcelas(baseParc,q,dados.primeiroVencimento,dados.freq),criadoEm:hoje(),pasta:'ativo',parcelasTipo:dados.freq==='weekly'?'juros':'total'};
+  const novo={id:uid(),clienteId:String(dados.clienteId),principal:dados.principal,total:dados.total,freq:dados.freq,primeiroVencimento:dados.primeiroVencimento,parcelas:montarParcelas(baseParc,q,dados.primeiroVencimento,dados.freq),criadoEm:hoje(),pasta:'ativo',parcelasTipo:(dados.freq==='weekly'||dados.freq==='monthly')?'juros':'total'};
   if(acharEmp(novo.id))return;
   db.emprestimos=upsertById(db.emprestimos,novo);
   $('ePrincipal').value='';$('eJuros').value='';
@@ -1066,6 +1092,8 @@ function criarNovoEmp(dados){
   const parc=novo.parcelas[0];
   alert(dados.freq==='weekly'
     ?`Empréstimo semanal criado. 4 parcelas de juros de ${brl(parc?.valor||0)}. Valor emprestado ${brl(dados.principal)} permanece até quitar. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`
+    :dados.freq==='monthly'
+    ?`Empréstimo mensal criado. 1 parcela de juros de ${brl(parc?.valor||0)}. Valor emprestado ${brl(dados.principal)} permanece até quitar. Vencimento: ${dataBR(dados.primeiroVencimento)}`
     :`Empréstimo criado. Primeiro vencimento: ${dataBR(dados.primeiroVencimento)}`);
 }
 function abrirConfirmaEmpExistente(cid,lista){
@@ -1113,7 +1141,7 @@ window.quitarEmp=id=>{
   const restante=saldo(e);
   if(!confirm(`Quitar todo o saldo de ${brl(restante)} de ${nome(e.clienteId)}?`))return;
   e.parcelas.forEach(pc=>{const r=restanteParcela(e,pc);if(r>.01)db.pagamentos.push({id:uid(),empId:e.id,parcId:pc.id,valor:+r.toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação total do empréstimo'})});
-  if(parcelasSoJuros(e)&&Number(e.principal||0)>.01){
+  if(parcelasSoJuros(e)&&capitalPendente(e)>.01){
     db.pagamentos.push({id:uid(),empId:e.id,parcId:null,valor:+Number(e.principal).toFixed(2),data:hoje(),forma:'Quitação',obs:'Quitação do valor emprestado (capital)',tipo:'quitacao_capital'});
   }
   e.dataQuitacao=hoje();
