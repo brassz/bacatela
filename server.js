@@ -111,7 +111,7 @@ const FRANCA_LOGIN_IDS = new Set([
   '07f8eab9-2122-47df-88d2-bd12b5739c51'
 ]);
 function ehPortalFranca(user) {
-  return Boolean(user && (user.portal === 'franca' || FRANCA_LOGIN_IDS.has(String(user.id))));
+  return Boolean(user && user.portal === 'franca');
 }
 function cidadeFranca(cidades) {
   return (cidades || []).find(z => String(z.nome || '').toLowerCase().includes('franca')) || null;
@@ -339,7 +339,9 @@ async function handleApi(req, res) {
         a.n += 1; loginAttempts.set(ip, a);
         return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
       }
-      const user = ehPortalFranca(u) ? Object.assign({}, safeUser(u), { portal: 'franca' }) : safeUser(u);
+      const user = String(body.portal || '') === 'franca'
+        ? Object.assign({}, safeUser(u), { portal: 'franca' })
+        : safeUser(u);
       const expira = Date.now() + SESSION_HOURS * 3600 * 1000;
       const token = signSession(user, expira);
       const cookie = `sessao=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_HOURS * 3600}${IS_PROD ? '; Secure' : ''}`;
