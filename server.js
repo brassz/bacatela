@@ -105,7 +105,57 @@ function uniqueById(arr) {
   }
   return Array.from(m.values());
 }
-function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio'); }
+function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio') && !ehPortalFranca(user); }
+const FRANCA_LOGIN_IDS = new Set([
+  '7d3ed049-067a-4013-ae90-48bc55ca9cdb',
+  '07f8eab9-2122-47df-88d2-bd12b5739c51'
+]);
+function ehPortalFranca(user) {
+  return Boolean(user && (user.portal === 'franca' || FRANCA_LOGIN_IDS.has(String(user.id))));
+}
+function cidadeFranca(cidades) {
+  return (cidades || []).find(z => String(z.nome || '').toLowerCase().includes('franca')) || null;
+}
+function clienteNaFranca(c, fid) {
+  if (fid && String(c.cidadeId || '') === String(fid)) return true;
+  return /franca/i.test(String(c.unidade || c.cidade || ''));
+}
+function filtrarDadosFranca(data) {
+  const z = cidadeFranca(data.cidades);
+  const fid = z ? String(z.id) : '';
+  const clientes = (data.clientes || []).filter(c => clienteNaFranca(c, fid));
+  const ids = new Set(clientes.map(c => String(c.id)));
+  const emprestimos = (data.emprestimos || []).filter(e => ids.has(String(e.clienteId)));
+  const eids = new Set(emprestimos.map(e => String(e.id)));
+  const pagamentos = (data.pagamentos || []).filter(p => eids.has(String(p.empId)));
+  return {
+    clientes,
+    emprestimos,
+    pagamentos,
+    cidades: z ? [z] : []
+  };
+}
+function mesclarDadosFranca(atual, recebido) {
+  const z = cidadeFranca(atual.cidades);
+  const fid = z ? String(z.id) : '';
+  const outrosCli = (atual.clientes || []).filter(c => !clienteNaFranca(c, fid));
+  const idsOutrosCli = new Set(outrosCli.map(c => String(c.id)));
+  const cliFranca = uniqueById(recebido.clientes || []).filter(c => !idsOutrosCli.has(String(c.id))).map(c => ({
+    ...c,
+    cidadeId: fid || c.cidadeId,
+    unidade: z ? z.nome : (c.unidade || 'Franca')
+  }));
+  const clientes = uniqueById(outrosCli.concat(cliFranca));
+  const idsFrancaCli = new Set(cliFranca.map(c => String(c.id)));
+  const outrosEmp = (atual.emprestimos || []).filter(e => idsOutrosCli.has(String(e.clienteId)));
+  const empFranca = uniqueById(recebido.emprestimos || []).filter(e => idsFrancaCli.has(String(e.clienteId)));
+  const emprestimos = uniqueById(outrosEmp.concat(empFranca));
+  const idsOutrosEmp = new Set(outrosEmp.map(e => String(e.id)));
+  const outrosPag = (atual.pagamentos || []).filter(p => idsOutrosEmp.has(String(p.empId)));
+  const pagFranca = uniqueById(recebido.pagamentos || []).filter(p => !idsOutrosEmp.has(String(p.empId)));
+  const pagamentos = uniqueById(outrosPag.concat(pagFranca));
+  return { clientes, emprestimos, pagamentos, cidades: atual.cidades || [] };
+}
 function timingEqual(a, b) {
   const ab = Buffer.from(String(a));
   const bb = Buffer.from(String(b));
@@ -285,10 +335,15 @@ async function handleApi(req, res) {
         return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
       }
       loginAttempts.delete(ip);
+      if (String(body.portal || '') === 'franca' && !FRANCA_LOGIN_IDS.has(String(u.id))) {
+        a.n += 1; loginAttempts.set(ip, a);
+        return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
+      }
+      const user = ehPortalFranca(u) ? Object.assign({}, safeUser(u), { portal: 'franca' }) : safeUser(u);
       const expira = Date.now() + SESSION_HOURS * 3600 * 1000;
-      const token = signSession(safeUser(u), expira);
+      const token = signSession(user, expira);
       const cookie = `sessao=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_HOURS * 3600}${IS_PROD ? '; Secure' : ''}`;
-      return json(res, 200, safeUser(u), { 'Set-Cookie': cookie });
+      return json(res, 200, user, { 'Set-Cookie': cookie });
     } catch (e) {
       console.error('login', e);
       return json(res, 400, { erro: 'Dados inválidos.' });
@@ -354,6 +409,9 @@ async function handleApi(req, res) {
   if (route === '/api/data' && req.method === 'GET') {
     try {
       const atual = await db.readDb();
+      if (ehPortalFranca(session.user)) {
+        return json(res, 200, { revision: atual.revision, data: filtrarDadosFranca(atual.data || {}) });
+      }
       if (session.user.papel === 'funcionario') {
         return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [] } });
       }
@@ -376,7 +434,9 @@ async function handleApi(req, res) {
       if (!Array.isArray(data.cidades)) data.cidades = atual.data.cidades || [];
       if (Number(body.revision) !== Number(atual.revision)) return json(res, 409, { erro: 'Outro usuário alterou os dados. Atualize a página antes de salvar.' });
       let dadosSalvar = data;
-      if (session.user.papel === 'funcionario') {
+      if (ehPortalFranca(session.user)) {
+        dadosSalvar = mesclarDadosFranca(atual.data || {}, data);
+      } else if (session.user.papel === 'funcionario') {
         const idsAtuais = new Set(atual.data.clientes.map(c => String(c.id)));
         const existentesBody = data.clientes.filter(c => idsAtuais.has(String(c.id)));
         if (existentesBody.length !== atual.data.clientes.length) return json(res, 403, { erro: 'Funcionário não pode excluir clientes.' });
@@ -419,12 +479,12 @@ async function handleApi(req, res) {
   }
 
   if (route === '/api/verificacoes' && req.method === 'GET') {
-    if (session.user.papel === 'funcionario') return json(res, 403, { erro: 'Sem permissão.' });
+    if (session.user.papel === 'funcionario' || ehPortalFranca(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
     return json(res, 200, (await db.readVerifs()).map(publicCadastro));
   }
   const arqMatch = route.match(/^\/api\/verificacoes\/([^/]+)\/arquivo\/([^/]+)$/);
   if (arqMatch && req.method === 'GET') {
-    if (session.user.papel === 'funcionario') return json(res, 403, { erro: 'Sem permissão.' });
+    if (session.user.papel === 'funcionario' || ehPortalFranca(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
     const item = (await db.readVerifs()).find(x => x.id === decodeURIComponent(arqMatch[1]));
     if (!item) return json(res, 404, { erro: 'Cadastro não encontrado.' });
     const arq = (item.arquivos || []).find(a => a.id === decodeURIComponent(arqMatch[2]));
@@ -439,7 +499,7 @@ async function handleApi(req, res) {
   }
   const verMatch = route.match(/^\/api\/verificacoes\/([^/]+)$/);
   if (verMatch && req.method === 'DELETE') {
-    if (session.user.papel === 'funcionario') return json(res, 403, { erro: 'Sem permissão.' });
+    if (session.user.papel === 'funcionario' || ehPortalFranca(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
     const item = (await db.readVerifs()).find(x => x.id === decodeURIComponent(verMatch[1]));
     if (!item) return json(res, 404, { erro: 'Cadastro não encontrado.' });
     try {
@@ -450,7 +510,7 @@ async function handleApi(req, res) {
     }
   }
   if (verMatch && req.method === 'PUT') {
-    if (session.user.papel === 'funcionario') return json(res, 403, { erro: 'Sem permissão.' });
+    if (session.user.papel === 'funcionario' || ehPortalFranca(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
     try {
       const body = await readBody(req, 50 * 1024);
       const arr = await db.readVerifs();

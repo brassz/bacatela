@@ -7,7 +7,7 @@
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{min-height:100%}body{margin:0;padding:14px;font-family:Arial,sans-serif;background:#050b16;color:#fff;position:relative}.bg-particles{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}.app{position:relative;z-index:1;max-width:1100px;margin:auto}.card{background:rgba(20,34,56,.88);padding:16px;border-radius:18px;margin:12px 0;position:relative;backdrop-filter:blur(8px)}.dash,.grid,.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.grid{grid-template-columns:1fr 1fr}.m{background:#0b1828;padding:12px;border-radius:12px;text-align:center;border:1px solid #334155}.m small{display:block;color:#cbd5e1}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button.active{background:#facc15;color:#422006}button{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;cursor:pointer;background:#38bdf8;color:#082f49}button.red{background:#ef4444;color:#fff}button.gray{background:#475569;color:#fff}button.green{background:#22c55e;color:#052e16}button.icon{padding:8px 10px;min-width:40px;background:#334155;color:#facc15;font-size:16px;line-height:1}label{display:block;color:#cbd5e1;margin:8px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #334155;border-radius:9px;background:#071525;color:#fff}.sec{display:none}.sec.active{display:block}.table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:9px;border-bottom:1px solid #334155;text-align:left}.late{color:#fecaca}.ok{color:#bbf7d0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hidden{display:none!important}.loan-box{background:#0b1828;border:1px solid #334155;border-radius:14px;padding:14px;margin:12px 0}.loan-box.fechado{background:rgba(127,29,29,.35);border:1px solid #ef4444;color:#fecaca}.loan-box.fechado h3,.loan-box.fechado .small{color:#fecaca}.loan-box.fechado table{min-width:480px}.loan-title,.history-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:13px;font-weight:bold}.badge.open{background:#1d4ed8}.badge.late{background:#b91c1c;color:#fff}.badge.paid{background:#15803d}.badge.fechado{background:#ef4444;color:#fff}.empty{color:#cbd5e1;padding:15px 0}.notice{padding:10px;border-radius:10px;background:#0b1828;margin:7px 0;border-left:4px solid #38bdf8}.notice.late{border-left-color:#ef4444}.small{font-size:13px;color:#cbd5e1}.subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}.subtabs button{background:#0b1828;color:#cbd5e1;border:1px solid #334155}.subtabs button.active{background:#facc15;color:#422006;border-color:#facc15}.paginacao{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.busca-bar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 12px}.busca-bar>div{flex:1;min-width:220px}.paginacao button:disabled{opacity:.4;cursor:default}.parc-paga{background:rgba(21,128,61,.28)}.parc-paga td{color:#bbf7d0;font-weight:bold}.parc-aberta{background:rgba(30,58,138,.18)}.hist-parc-box{margin-top:10px}@media(max-width:700px){.dash,.grid,.summary-grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.dash,.grid,.summary-grid{grid-template-columns:1fr}table{min-width:760px}}
 
-.login-screen{position:fixed;inset:0;background:rgba(5,11,22,.42);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px}.login-box{width:min(440px,100%);background:rgba(20,34,56,.9);border:1px solid #334155;border-radius:18px;padding:20px;backdrop-filter:blur(10px);box-shadow:0 12px 40px #0006}.login-box h1{margin-top:0}.userbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:#0b1828;border:1px solid #334155;border-radius:12px;padding:10px 12px;margin-bottom:12px}.sync{font-size:12px;color:#cbd5e1}.error{color:#fecaca;margin-top:8px}.disabled-overlay{opacity:.55;pointer-events:none}
+.login-screen{position:fixed;inset:0;background:rgba(5,11,22,.42);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px}.login-box{width:min(440px,100%);background:rgba(20,34,56,.9);border:1px solid #334155;border-radius:18px;padding:20px;backdrop-filter:blur(10px);box-shadow:0 12px 40px #0006;position:relative}.login-box h1{margin-top:0}.login-secret{position:absolute;top:10px;right:12px;border:0;background:transparent;padding:2px 4px;opacity:.07;cursor:pointer;font-size:16px;line-height:1;color:inherit;letter-spacing:2px}.login-secret:focus{outline:none;opacity:.12}.userbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:#0b1828;border:1px solid #334155;border-radius:12px;padding:10px 12px;margin-bottom:12px}.sync{font-size:12px;color:#cbd5e1}.error{color:#fecaca;margin-top:8px}.disabled-overlay{opacity:.55;pointer-events:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100002;display:flex;align-items:center;justify-content:center;padding:16px}.modal-box{width:min(560px,100%);background:rgba(20,34,56,.97);border:1px solid #334155;border-radius:18px;padding:20px;max-height:90vh;overflow:auto}.modal-box h2{margin-top:0}
 </style>
 </head>
@@ -18,7 +18,25 @@
 <div id="modalConfirmaEmp" class="modal hidden"><div class="modal-box"><h2>Cliente já possui empréstimo</h2><p class="small" id="confirmaEmpTexto"></p><div id="confirmaEmpLista" class="notice late" style="margin:12px 0"></div><p class="small">Deseja criar um novo empréstimo mesmo assim?</p><div class="actions"><button type="button" class="green" id="verDetalhesEmpExistente">Ver detalhes</button><button type="button" id="confirmarCriarEmp">Confirmar e criar</button><button type="button" class="gray" id="cancelarCriarEmp">Cancelar</button></div></div></div>
 <div id="modalAbater" class="modal hidden"><div class="modal-box"><h2>Abater saldo</h2><p class="small" id="abaterResumo"></p><input type="hidden" id="abaterEmpId"><div class="grid"><div><label>Valor pago para abater</label><input id="abaterValor" type="number" step="0.01" min="0.01"></div></div><div id="abaterPreview" class="notice" style="margin-top:12px">Digite o valor para ver as novas parcelas.</div><p class="small">O valor informado reduz o saldo e as próximas parcelas são recalculadas automaticamente.</p><div class="actions"><button type="button" id="confirmarAbater">Confirmar abatimento</button><button type="button" class="gray" id="cancelarAbater">Cancelar</button></div></div></div>
 <div id="modalExcessoPag" class="modal hidden"><div class="modal-box"><h2>Valor maior que a parcela</h2><p class="small" id="excessoPagTexto"></p><p class="small">O que deseja fazer com o valor extra?</p><div class="actions"><button type="button" id="excessoAbaterEmp">Abater no valor emprestado</button><button type="button" class="green" id="excessoProxParc">Diminuir da próxima parcela</button><button type="button" class="gray" id="cancelarExcessoPag">Cancelar</button></div></div></div>
-<div id="loginScreen" class="login-screen"><div class="login-box"><h1>🔐 Empréstimos — Imperatriz/MA</h1><p class="small">Entre com seu usuário e senha para acessar os cadastros online.</p><label>Usuário</label><input id="loginUsuario" autocomplete="username"><label>Senha</label><input id="loginSenha" type="password" autocomplete="current-password"><div class="actions"><button id="entrarSistema">Entrar</button></div><div id="loginErro" class="error"></div></div></div>
+<div id="loginScreen" class="login-screen">
+  <div class="login-box" id="loginBoxPrincipal">
+    <button type="button" class="login-secret" id="abrirLoginFranca" aria-label="">🔐🔑</button>
+    <h1>🔐 Empréstimos — Imperatriz/MA</h1>
+    <p class="small">Entre com seu usuário e senha para acessar os cadastros online.</p>
+    <label>Usuário</label><input id="loginUsuario" autocomplete="username">
+    <label>Senha</label><input id="loginSenha" type="password" autocomplete="current-password">
+    <div class="actions"><button id="entrarSistema">Entrar</button></div>
+    <div id="loginErro" class="error"></div>
+  </div>
+  <div class="login-box hidden" id="loginBoxFranca">
+    <h1>🔑 Empréstimos — Franca</h1>
+    <p class="small">Acesso restrito aos clientes de Franca.</p>
+    <label>Usuário</label><input id="loginUsuarioFranca" autocomplete="username">
+    <label>Senha</label><input id="loginSenhaFranca" type="password" autocomplete="current-password">
+    <div class="actions"><button id="entrarFranca">Entrar</button><button type="button" class="gray" id="voltarLoginPrincipal">Voltar</button></div>
+    <div id="loginErroFranca" class="error"></div>
+  </div>
+</div>
 <main class="app hidden" id="appPrincipal">
 <h1>💼 Gestão de Empréstimos</h1><p class="small" id="subtituloApp">Selecione a cidade no Resumo para ver e cadastrar clientes daquela unidade — os dados não se misturam.</p><div class="userbar"><div><b id="usuarioLogado">Usuário</b><div class="sync" id="syncStatus">Conectando ao servidor...</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="margin:0">Cidade</label><select id="cidadeTopo" style="width:auto;min-width:180px"></select><button class="gray" id="sairSistema">Sair</button></div></div>
 <section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Saldo dos contratos</small><b id="dTot">R$ 0,00</b></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Saldo a receber</small><b id="dSal">R$ 0,00</b></div><div class="m"><small>Juros previstos</small><b id="dLucro">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
@@ -1416,13 +1434,27 @@ $('salvarCidade')?.addEventListener('click',()=>{
 });
 function aplicarPermissoes(){
   const funcionario=currentUser?.papel==='funcionario';
-  const gerenciaAcessos=currentUser?.papel==='admin'||currentUser?.papel==='socio';
-  document.querySelector('.dash')?.classList.toggle('hidden',funcionario);
+  const franca=currentUser?.portal==='franca';
+  const gerenciaAcessos=!franca&&(currentUser?.papel==='admin'||currentUser?.papel==='socio');
+  document.querySelector('.dash')?.classList.toggle('hidden',funcionario||franca);
   document.querySelectorAll('.tabs button').forEach(b=>{
-    if(funcionario) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','pagamentos','historico','multas'].includes(b.dataset.t));
+    if(franca||funcionario) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','pagamentos','historico','multas'].includes(b.dataset.t));
     else if(b.id==='tabVerificacoes'||b.id==='tabCidades'||b.id==='tabSocios') b.classList.toggle('hidden', b.id==='tabSocios' && !gerenciaAcessos);
   });
-  if(funcionario){
+  ['cidadeTopo','cidadeResumo'].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.disabled=!!franca;
+    el.classList.toggle('disabled-overlay',!!franca);
+  });
+  if(franca){
+    const z=(db.cidades||[]).find(c=>String(c.nome||'').toLowerCase().includes('franca'));
+    if(z){
+      cidadeAtualId=z.id;
+      localStorage.setItem('cidadeAtualId',cidadeAtualId);
+    }
+    if($('subtituloApp'))$('subtituloApp').textContent='Unidade: Franca — somente clientes desta cidade.';
+  }
+  if(funcionario||franca){
     abrirAba('resumo');
     if($('historicoCliente'))$('historicoCliente').classList.add('hidden');
   }
@@ -1441,8 +1473,10 @@ async function puxarAtualizacoes(){
       const keepCli=editCliente,keepPag=editPag;
       await load();
       render(true);
-      await renderUsuarios();
-      await renderVerificacoes();
+      if(currentUser.portal!=='franca'){
+        await renderUsuarios();
+        await renderVerificacoes();
+      }
       if(keepEmp&&acharEmp(keepEmp)){editEmp=String(keepEmp);if($('eEditId'))$('eEditId').value=String(keepEmp);}
       editCliente=keepCli;editPag=keepPag;
       syncMsg('Atualizado com as alterações de outros usuários');
@@ -1457,11 +1491,51 @@ function iniciarSync(){
   puxarAtualizacoes();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)puxarAtualizacoes()});
+function rotuloUsuario(u){
+  if(!u)return 'Usuário';
+  const papel=u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio';
+  return (u.nome||u.usuario)+' — '+(u.portal==='franca'?papel+' · Franca':papel);
+}
 function mostrarApp(){$('loginScreen').classList.add('hidden');$('appPrincipal').classList.remove('hidden')}
-function mostrarLogin(){$('appPrincipal').classList.add('hidden');$('loginScreen').classList.remove('hidden')}
-async function iniciar(){try{currentUser=await api('/api/me');$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();mostrarApp();aplicarPermissoes();render(true);await renderUsuarios();await renderVerificacoes();iniciarSync();syncMsg('Dados sincronizados com o servidor')}catch(e){mostrarLogin()}}
-$('entrarSistema').onclick=async()=>{const usuario=$('loginUsuario').value.trim(),senha=$('loginSenha').value;$('loginErro').textContent='';try{currentUser=await api('/api/login',{method:'POST',body:JSON.stringify({usuario,senha})});$('usuarioLogado').textContent=(currentUser.nome||currentUser.usuario)+' — '+(currentUser.papel==='admin'?'Administrador':currentUser.papel==='funcionario'?'Funcionário':'Sócio');await load();mostrarApp();aplicarPermissoes();render(true);await renderUsuarios();await renderVerificacoes();iniciarSync();syncMsg('Dados sincronizados com o servidor')}catch(e){$('loginErro').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
+function mostrarLogin(){
+  $('appPrincipal').classList.add('hidden');
+  $('loginScreen').classList.remove('hidden');
+  if($('loginBoxPrincipal'))$('loginBoxPrincipal').classList.remove('hidden');
+  if($('loginBoxFranca'))$('loginBoxFranca').classList.add('hidden');
+}
+function abrirPortalFranca(){
+  if($('loginErro'))$('loginErro').textContent='';
+  if($('loginErroFranca'))$('loginErroFranca').textContent='';
+  $('loginBoxPrincipal').classList.add('hidden');
+  $('loginBoxFranca').classList.remove('hidden');
+  setTimeout(()=>$('loginUsuarioFranca')?.focus(),50);
+}
+async function entrarCom(usuario,senha,portal,erroId){
+  $(erroId).textContent='';
+  currentUser=await api('/api/login',{method:'POST',body:JSON.stringify({usuario,senha,portal})});
+  $('usuarioLogado').textContent=rotuloUsuario(currentUser);
+  await load();
+  mostrarApp();
+  aplicarPermissoes();
+  render(true);
+  if(currentUser.portal!=='franca'){
+    await renderUsuarios();
+    await renderVerificacoes();
+  }
+  iniciarSync();
+  syncMsg('Dados sincronizados com o servidor');
+}
+async function iniciar(){try{currentUser=await api('/api/me');$('usuarioLogado').textContent=rotuloUsuario(currentUser);await load();mostrarApp();aplicarPermissoes();render(true);if(currentUser.portal!=='franca'){await renderUsuarios();await renderVerificacoes();}iniciarSync();syncMsg('Dados sincronizados com o servidor')}catch(e){mostrarLogin()}}
+$('abrirLoginFranca')?.addEventListener('click',abrirPortalFranca);
+$('voltarLoginPrincipal')?.addEventListener('click',()=>{
+  $('loginBoxFranca').classList.add('hidden');
+  $('loginBoxPrincipal').classList.remove('hidden');
+  if($('loginErroFranca'))$('loginErroFranca').textContent='';
+});
+$('entrarSistema').onclick=async()=>{try{await entrarCom($('loginUsuario').value.trim(),$('loginSenha').value,'','loginErro')}catch(e){$('loginErro').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
+$('entrarFranca').onclick=async()=>{try{await entrarCom($('loginUsuarioFranca').value.trim(),$('loginSenhaFranca').value,'franca','loginErroFranca')}catch(e){$('loginErroFranca').textContent=e.message==='AUTH'?'Usuário ou senha inválidos.':e.message}};
 $('loginSenha').addEventListener('keydown',e=>{if(e.key==='Enter')$('entrarSistema').click()});
-$('sairSistema').onclick=async()=>{pararSync();try{await api('/api/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;$('loginSenha').value='';mostrarLogin()};
+$('loginSenhaFranca')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('entrarFranca').click()});
+$('sairSistema').onclick=async()=>{pararSync();try{await api('/api/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;$('loginSenha').value='';if($('loginSenhaFranca'))$('loginSenhaFranca').value='';mostrarLogin()};
 iniciar();
 </script></body></html>
