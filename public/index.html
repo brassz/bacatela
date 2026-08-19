@@ -648,6 +648,9 @@ function textoCobranca(e){
   const vencidas=e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).sort((a,b)=>a.data.localeCompare(b.data));
   if(!vencidas.length)return '';
   const primeira=vencidas[0];
+  if(currentUser?.portal==='franca'){
+    return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nPagamento Parcela ${primeira.n}\nValor da parcela: ${brl(restanteParcela(e,primeira))}\n\nDados para pagamento:\nPix - CNPJ 60.495.244/0001-14\nAf Capel Serviços de Cobrança Ltda.`;
+  }
   const juros=jurosEmp(e);
   const quitacao=+(Number(e.principal||0)+juros).toFixed(2);
   const minimo=restanteParcela(e,primeira);
