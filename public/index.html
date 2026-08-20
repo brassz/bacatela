@@ -668,12 +668,18 @@ function dataQuitacao(e){if(e.dataQuitacao)return e.dataQuitacao;if(capitalPende
 function badge(e){const s=statusEmp(e);return `<span class="badge ${s==='Quitado'?'paid':s==='Atrasado'?'late':'open'}">${s}</span>`}
 const DADOS_COBRANCA={banco:'Nubank',titular:'Alg comercial ou Al gavioli lanches',pix:'16991753893',pixExibir:'(16) 99175-3893'};
 function telefoneWhatsApp(tel){let n=String(tel||'').replace(/\D/g,'');if((n.length===10||n.length===11)&&!n.startsWith('55'))n='55'+n;return n}
+function ehClienteFranca(c){
+  if(!c)return false;
+  const z=(db.cidades||[]).find(x=>String(x.nome||'').toLowerCase().includes('franca'));
+  if(z&&String(clienteCidadeId(c))===String(z.id))return true;
+  return /franca/i.test(String(c.unidade||c.cidade||''));
+}
 function textoCobranca(e){
   const c=db.clientes.find(x=>x.id===e.clienteId);if(!c)return '';
   const vencidas=e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).sort((a,b)=>a.data.localeCompare(b.data));
   if(!vencidas.length)return '';
   const primeira=vencidas[0];
-  if(currentUser?.portal==='franca'){
+  if(currentUser?.portal==='franca'||ehClienteFranca(c)){
     return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nPagamento Parcela ${primeira.n}\nValor da parcela: ${brl(restanteParcela(e,primeira))}\n\nDados para pagamento:\nPix - CNPJ 60.495.244/0001-14\nAf Capel Serviços de Cobrança Ltda.`;
   }
   const juros=jurosEmp(e);
