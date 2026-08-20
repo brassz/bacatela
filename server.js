@@ -110,8 +110,19 @@ const FRANCA_LOGIN_IDS = new Set([
   '7d3ed049-067a-4013-ae90-48bc55ca9cdb',
   '07f8eab9-2122-47df-88d2-bd12b5739c51'
 ]);
+/** Somente admin e alex escolhem entre Franca Privado e os demais sistemas. */
+function podeEscolherSistema(u) {
+  const user = String(u && u.usuario || '').toLowerCase();
+  return user === 'admin' || user === 'alex';
+}
+function podePortalFranca(u) {
+  return Boolean(u && (podeEscolherSistema(u) || FRANCA_LOGIN_IDS.has(String(u.id))));
+}
 function ehPortalFranca(user) {
   return Boolean(user && user.portal === 'franca');
+}
+function cookieSessao(token, maxAgeSec) {
+  return `sessao=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAgeSec}${IS_PROD ? '; Secure' : ''}`;
 }
 function cidadeFranca(cidades) {
   return (cidades || []).find(z => String(z.nome || '').toLowerCase().includes('franca')) || null;
@@ -335,17 +346,16 @@ async function handleApi(req, res) {
         return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
       }
       loginAttempts.delete(ip);
-      if (String(body.portal || '') === 'franca' && !FRANCA_LOGIN_IDS.has(String(u.id))) {
+      if (String(body.portal || '') === 'franca' && !podePortalFranca(u)) {
         a.n += 1; loginAttempts.set(ip, a);
         return json(res, 401, { erro: 'Usuário ou senha inválidos.' });
       }
       const user = String(body.portal || '') === 'franca'
         ? Object.assign({}, safeUser(u), { portal: 'franca' })
-        : safeUser(u);
+        : Object.assign({}, safeUser(u), podeEscolherSistema(u) ? { sistemaPendente: true } : {});
       const expira = Date.now() + SESSION_HOURS * 3600 * 1000;
       const token = signSession(user, expira);
-      const cookie = `sessao=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_HOURS * 3600}${IS_PROD ? '; Secure' : ''}`;
-      return json(res, 200, user, { 'Set-Cookie': cookie });
+      return json(res, 200, user, { 'Set-Cookie': cookieSessao(token, SESSION_HOURS * 3600) });
     } catch (e) {
       console.error('login', e);
       return json(res, 400, { erro: 'Dados inválidos.' });
@@ -356,6 +366,27 @@ async function handleApi(req, res) {
   if (!session) return json(res, 401, { erro: 'Sessão encerrada.' });
 
   if (route === '/api/me' && req.method === 'GET') return json(res, 200, session.user);
+  if (route === '/api/escolher-sistema' && req.method === 'POST') {
+    if (!podeEscolherSistema(session.user)) return json(res, 403, { erro: 'Sem permissão para escolher o sistema.' });
+    try {
+      const body = await readBody(req, 50 * 1024);
+      const portal = String(body.portal || '').trim().toLowerCase();
+      if (portal === 'franca') {
+        if (!podePortalFranca(session.user)) return json(res, 403, { erro: 'Sem permissão para Franca Privado.' });
+        const user = Object.assign({}, safeUser(session.user), { portal: 'franca' });
+        const token = signSession(user, session.expira);
+        return json(res, 200, user, { 'Set-Cookie': cookieSessao(token, Math.max(0, Math.floor((session.expira - Date.now()) / 1000))) });
+      }
+      if (portal === '' || portal === 'imperatriz' || portal === 'outros') {
+        const user = safeUser(session.user);
+        const token = signSession(user, session.expira);
+        return json(res, 200, user, { 'Set-Cookie': cookieSessao(token, Math.max(0, Math.floor((session.expira - Date.now()) / 1000))) });
+      }
+      return json(res, 400, { erro: 'Sistema inválido.' });
+    } catch (e) {
+      return json(res, 400, { erro: 'Não foi possível escolher o sistema.' });
+    }
+  }
   if (route === '/api/revision' && req.method === 'GET') {
     try {
       return json(res, 200, { revision: await db.readRevision() });
@@ -365,6 +396,9 @@ async function handleApi(req, res) {
   }
   if (route === '/api/logout' && req.method === 'POST') {
     return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
+  }
+  if (session.user.sistemaPendente) {
+    return json(res, 403, { erro: 'Escolha o sistema para continuar.' });
   }
   if (route === '/api/usuarios' && req.method === 'GET') {
     if (!podeGerenciarAcessos(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem gerenciar acessos.' });
@@ -573,6 +607,7 @@ function ensureReady() {
     readyPromise = (async () => {
       await db.pingSchema();
       await db.initUsers(hashSenha);
+      await db.ensureAlexAdmin(hashSenha);
     })();
   }
   return readyPromise.catch(err => {
@@ -586,7 +621,7 @@ ensureReady().then(() => {
   server.listen(PORT, HOST, () => {
     console.log(`Empréstimos Imperatriz online em http://${HOST}:${PORT}`);
     console.log('Dados salvos no Supabase (tabelas gestaoemprestimosalex_*).');
-    if (!IS_PROD) console.log('Teste local: admin/Admin123!. Cadastre sócios e funcionários na aba Acessos.');
+    if (!IS_PROD) console.log('Teste local: admin/Admin123! ou alex/ALEX123. Após o login, escolha o sistema.');
   });
 }).catch(e => {
   console.error('Supabase indisponível ou schema não aplicado.');
