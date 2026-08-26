@@ -91,6 +91,19 @@ CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_pagamentos (
 CREATE INDEX IF NOT EXISTS gestaoemprestimosalex_pagamentos_emp_idx
   ON public.gestaoemprestimosalex_pagamentos (emprestimo_id);
 
+CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_despesas (
+  id TEXT PRIMARY KEY,
+  descricao TEXT NOT NULL,
+  valor NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  data DATE NOT NULL,
+  cidade_id TEXT,
+  obs TEXT,
+  criado_em DATE
+);
+
+CREATE INDEX IF NOT EXISTS gestaoemprestimosalex_despesas_data_idx
+  ON public.gestaoemprestimosalex_despesas (data);
+
 CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_sessions (
   token TEXT PRIMARY KEY,
   user_json JSONB NOT NULL,
@@ -205,6 +218,18 @@ AS $$
           'tipo', g.tipo
         ) ORDER BY g.data)
         FROM gestaoemprestimosalex_pagamentos g
+      ), '[]'::jsonb),
+      'despesas', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'id', d.id,
+          'descricao', d.descricao,
+          'valor', d.valor,
+          'data', d.data,
+          'cidadeId', d.cidade_id,
+          'obs', d.obs,
+          'criadoEm', d.criado_em
+        ) ORDER BY d.data DESC, d.descricao)
+        FROM gestaoemprestimosalex_despesas d
       ), '[]'::jsonb)
     )
   );
@@ -223,6 +248,7 @@ DECLARE
   v_emp JSONB;
   v_pag JSONB;
   v_cid JSONB;
+  v_desp JSONB;
 BEGIN
   INSERT INTO gestaoemprestimosalex_app_meta (id, revision) VALUES (1, 0)
   ON CONFLICT (id) DO NOTHING;
@@ -237,6 +263,7 @@ BEGIN
   v_emp := COALESCE(v_data->'emprestimos', '[]'::jsonb);
   v_pag := COALESCE(v_data->'pagamentos', '[]'::jsonb);
   v_cid := COALESCE(v_data->'cidades', '[]'::jsonb);
+  v_desp := COALESCE(v_data->'despesas', '[]'::jsonb);
 
   IF jsonb_array_length(v_cid) > 0 OR v_data ? 'cidades' THEN
     DELETE FROM gestaoemprestimosalex_cidades z
@@ -249,6 +276,30 @@ BEGIN
     WHERE COALESCE(x->>'id', '') <> '' AND COALESCE(x->>'nome', '') <> ''
     ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome;
   END IF;
+
+  DELETE FROM gestaoemprestimosalex_despesas d
+  WHERE NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_desp) x WHERE x->>'id' = d.id
+  );
+
+  INSERT INTO gestaoemprestimosalex_despesas (id, descricao, valor, data, cidade_id, obs, criado_em)
+  SELECT
+    x->>'id',
+    COALESCE(x->>'descricao', ''),
+    COALESCE((x->>'valor')::NUMERIC, 0),
+    (x->>'data')::DATE,
+    NULLIF(x->>'cidadeId', ''),
+    x->>'obs',
+    NULLIF(x->>'criadoEm', '')::DATE
+  FROM jsonb_array_elements(v_desp) x
+  WHERE COALESCE(x->>'id', '') <> ''
+  ON CONFLICT (id) DO UPDATE SET
+    descricao = EXCLUDED.descricao,
+    valor = EXCLUDED.valor,
+    data = EXCLUDED.data,
+    cidade_id = EXCLUDED.cidade_id,
+    obs = EXCLUDED.obs,
+    criado_em = EXCLUDED.criado_em;
 
   DELETE FROM gestaoemprestimosalex_pagamentos g
   WHERE NOT EXISTS (
@@ -385,6 +436,7 @@ ALTER TABLE public.gestaoemprestimosalex_clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_emprestimos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_parcelas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_pagamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gestaoemprestimosalex_despesas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_verificacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gestaoemprestimosalex_verificacao_arquivos ENABLE ROW LEVEL SECURITY;
@@ -396,6 +448,7 @@ DROP POLICY IF EXISTS gestaoemprestimosalex_clientes_all ON public.gestaoemprest
 DROP POLICY IF EXISTS gestaoemprestimosalex_emprestimos_all ON public.gestaoemprestimosalex_emprestimos;
 DROP POLICY IF EXISTS gestaoemprestimosalex_parcelas_all ON public.gestaoemprestimosalex_parcelas;
 DROP POLICY IF EXISTS gestaoemprestimosalex_pagamentos_all ON public.gestaoemprestimosalex_pagamentos;
+DROP POLICY IF EXISTS gestaoemprestimosalex_despesas_all ON public.gestaoemprestimosalex_despesas;
 DROP POLICY IF EXISTS gestaoemprestimosalex_sessions_all ON public.gestaoemprestimosalex_sessions;
 DROP POLICY IF EXISTS gestaoemprestimosalex_verificacoes_all ON public.gestaoemprestimosalex_verificacoes;
 DROP POLICY IF EXISTS gestaoemprestimosalex_verificacao_arquivos_all ON public.gestaoemprestimosalex_verificacao_arquivos;
@@ -407,6 +460,7 @@ CREATE POLICY gestaoemprestimosalex_clientes_all ON public.gestaoemprestimosalex
 CREATE POLICY gestaoemprestimosalex_emprestimos_all ON public.gestaoemprestimosalex_emprestimos FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY gestaoemprestimosalex_parcelas_all ON public.gestaoemprestimosalex_parcelas FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY gestaoemprestimosalex_pagamentos_all ON public.gestaoemprestimosalex_pagamentos FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY gestaoemprestimosalex_despesas_all ON public.gestaoemprestimosalex_despesas FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY gestaoemprestimosalex_sessions_all ON public.gestaoemprestimosalex_sessions FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY gestaoemprestimosalex_verificacoes_all ON public.gestaoemprestimosalex_verificacoes FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY gestaoemprestimosalex_verificacao_arquivos_all ON public.gestaoemprestimosalex_verificacao_arquivos FOR ALL TO anon USING (true) WITH CHECK (true);
