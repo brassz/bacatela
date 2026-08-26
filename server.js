@@ -165,7 +165,7 @@ function mesclarDadosFranca(atual, recebido) {
   const outrosPag = (atual.pagamentos || []).filter(p => idsOutrosEmp.has(String(p.empId)));
   const pagFranca = uniqueById(recebido.pagamentos || []).filter(p => !idsOutrosEmp.has(String(p.empId)));
   const pagamentos = uniqueById(outrosPag.concat(pagFranca));
-  return { clientes, emprestimos, pagamentos, cidades: atual.cidades || [] };
+  return { clientes, emprestimos, pagamentos, cidades: atual.cidades || [], despesas: atual.despesas || [] };
 }
 function timingEqual(a, b) {
   const ab = Buffer.from(String(a));
@@ -449,7 +449,7 @@ async function handleApi(req, res) {
         return json(res, 200, { revision: atual.revision, data: filtrarDadosFranca(atual.data || {}) });
       }
       if (session.user.papel === 'funcionario') {
-        return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [] } });
+        return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [], despesas: atual.data.despesas || [] } });
       }
       return json(res, 200, atual);
     } catch (e) {
@@ -466,8 +466,10 @@ async function handleApi(req, res) {
       data.emprestimos = uniqueById(data.emprestimos);
       data.pagamentos = uniqueById(data.pagamentos);
       if (Array.isArray(data.cidades)) data.cidades = uniqueById(data.cidades);
+      if (Array.isArray(data.despesas)) data.despesas = uniqueById(data.despesas);
       const atual = await db.readDb();
       if (!Array.isArray(data.cidades)) data.cidades = atual.data.cidades || [];
+      if (!Array.isArray(data.despesas)) data.despesas = atual.data.despesas || [];
       if (Number(body.revision) !== Number(atual.revision)) return json(res, 409, { erro: 'Outro usuário alterou os dados. Atualize a página antes de salvar.' });
       let dadosSalvar = data;
       if (ehPortalFranca(session.user)) {
@@ -503,7 +505,7 @@ async function handleApi(req, res) {
         const idsEmpOk = new Set(emprestimosFinais.map(e => e.id));
         const idsPagBody = new Set(pagBody.map(p => p.id));
         const pagamentosFinais = (atual.data.pagamentos || []).filter(antigo => idsPagBody.has(antigo.id) && idsEmpOk.has(antigo.empId)).map(antigo => pagPorId.get(antigo.id) || antigo).concat(novosPag.filter(p => idsEmpOk.has(p.empId)));
-        dadosSalvar = { clientes: clientesFinais, emprestimos: emprestimosFinais, pagamentos: pagamentosFinais, cidades: atual.data.cidades || [] };
+        dadosSalvar = { clientes: clientesFinais, emprestimos: emprestimosFinais, pagamentos: pagamentosFinais, cidades: atual.data.cidades || [], despesas: atual.data.despesas || [] };
       }
       const next = { revision: Number(atual.revision), data: dadosSalvar, atualizadoEm: new Date().toISOString(), atualizadoPor: session.user.usuario };
       const saved = await db.writeDb(next);

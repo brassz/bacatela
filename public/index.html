@@ -19,6 +19,7 @@
 <div id="modalAbater" class="modal hidden"><div class="modal-box"><h2>Abater saldo</h2><p class="small" id="abaterResumo"></p><input type="hidden" id="abaterEmpId"><div class="grid"><div><label>Valor pago para abater</label><input id="abaterValor" type="number" step="0.01" min="0.01"></div></div><div id="abaterPreview" class="notice" style="margin-top:12px">Digite o valor para ver as novas parcelas.</div><p class="small">O valor informado reduz o saldo e as próximas parcelas são recalculadas automaticamente.</p><div class="actions"><button type="button" id="confirmarAbater">Confirmar abatimento</button><button type="button" class="gray" id="cancelarAbater">Cancelar</button></div></div></div>
 <div id="modalExcessoPag" class="modal hidden"><div class="modal-box"><h2>Valor maior que a parcela</h2><p class="small" id="excessoPagTexto"></p><p class="small">O que deseja fazer com o valor extra?</p><div class="actions"><button type="button" id="excessoAbaterEmp">Abater no valor emprestado</button><button type="button" class="green" id="excessoProxParc">Diminuir da próxima parcela</button><button type="button" class="gray" id="cancelarExcessoPag">Cancelar</button></div></div></div>
 <div id="modalFaltaPag" class="modal hidden"><div class="modal-box"><h2>Valor menor que a parcela</h2><p class="small" id="faltaPagTexto"></p><p class="small">O que deseja fazer com a diferença?</p><div class="actions"><button type="button" class="green" id="faltaProxParc">Incluir na próxima parcela</button><button type="button" id="faltaDiluir">Diluir nas parcelas restantes</button><button type="button" class="gray" id="faltaParcial">Registrar pagamento parcial</button><button type="button" class="gray" id="cancelarFaltaPag">Cancelar</button></div></div></div>
+<div id="modalMensagem" class="modal hidden"><div class="modal-box"><h2 id="modalMensagemTitulo">Enviar mensagem</h2><p class="small" id="modalMensagemResumo"></p><label>Mensagem</label><textarea id="mensagemTexto" rows="10" style="resize:vertical;min-height:160px"></textarea><div class="actions"><button type="button" class="green" id="enviarMensagemWhatsApp">Enviar no WhatsApp</button><button type="button" class="gray" id="usarMensagemPadrao">Usar mensagem padrão</button><button type="button" class="gray" id="cancelarMensagem">Cancelar</button></div></div></div>
 <div id="loginScreen" class="login-screen">
   <div class="login-box" id="loginBoxPrincipal">
     <h1>Empréstimos — Imperatriz/MA</h1>
@@ -42,7 +43,7 @@
 <main class="app hidden" id="appPrincipal">
 <h1>💼 Gestão de Empréstimos</h1><p class="small" id="subtituloApp">Selecione a cidade no Resumo para ver e cadastrar clientes daquela unidade — os dados não se misturam.</p><div class="userbar"><div><b id="usuarioLogado">Usuário</b><div class="sync" id="syncStatus">Conectando ao servidor...</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="margin:0">Cidade</label><select id="cidadeTopo" style="width:auto;min-width:180px"></select><button class="gray" id="sairSistema">Sair</button></div></div>
 <section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Saldo dos contratos</small><b id="dTot">R$ 0,00</b></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Saldo a receber</small><b id="dSal">R$ 0,00</b></div><div class="m"><small>Juros previstos</small><b id="dLucro">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
-<div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="pagamentos">Pagamentos</button><button data-t="historico">Histórico</button><button data-t="multas">Multa</button><button data-t="saude">Saúde da Empresa</button><button id="tabFaturamento" class="hidden" data-t="faturamento">Faturamento</button><button data-t="backup">Backup</button><button id="tabCidades" data-t="cidades">Cidades</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
+<div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="pagamentos">Pagamentos</button><button data-t="historico">Histórico</button><button data-t="multas">Multa</button><button data-t="saude">Saúde da Empresa</button><button id="tabFaturamento" class="hidden" data-t="faturamento">Faturamento</button><button id="tabDespesas" class="hidden" data-t="despesas">Despesas</button><button data-t="backup">Backup</button><button id="tabCidades" data-t="cidades">Cidades</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
 <section id="resumo" class="sec active"><div class="card"><h2>Cidade em visualização</h2><p class="small">Escolha a cidade. Clientes, empréstimos, pagamentos e o resumo passam a mostrar somente essa cidade.</p><label>Cidade</label><select id="cidadeResumo"></select><div id="cidadeAviso" class="notice" style="margin-top:12px"></div></div><div class="card"><div class="subtabs" id="resumoSubtabs"><button class="active" data-resumo-tab="ativo">Empréstimos Ativos</button><button data-resumo-tab="negociado">Empréstimos Negociados</button><button data-resumo-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="resumoAbaHint">Mostrando empréstimos ativos em andamento.</p><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaResumo" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaResumo">Buscar</button><button type="button" class="gray" id="limparBuscaResumo">Limpar</button></div><div class="summary-grid" id="resumoContadores" style="margin:12px 0"></div><div class="card" style="margin:12px 0;padding:14px"><h2>📅 Vencem hoje</h2><div id="listaHoje" class="empty">Nenhum empréstimo vence hoje.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>⚠️ Vencidos</h2><div id="listaVencidos" class="empty">Nenhum empréstimo vencido.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>✅ Em dia</h2><div id="listaAtivos" class="empty">Nenhum empréstimo em dia.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>Vencimentos e avisos</h2><div id="alerts">Nenhum vencimento.</div></div></div></section>
 <section id="cidades" class="sec"><div class="card"><h2>🏙️ Cidades</h2><p class="small">Cadastre as cidades da operação. Cada cliente fica preso à cidade em que foi criado.</p><div class="grid"><div><label>Nome da cidade</label><input id="cidNome" placeholder="Ex.: São Paulo"></div></div><div class="actions"><button id="salvarCidade">Adicionar cidade</button></div></div><div class="card"><h2>Cidades cadastradas</h2><div class="table"><table><thead><tr><th>Cidade</th><th>Clientes</th><th>Ações</th></tr></thead><tbody id="tbCidades"></tbody></table></div></div></section>
 <section id="saude" class="sec"><div class="card"><h2>📊 Saúde da Empresa</h2><div id="saudeStatus" class="notice">Calculando...</div><div id="saudeResumo" class="summary-grid"></div><div id="saudeAnalise"></div></div></section>
@@ -52,6 +53,7 @@
 <section id="pagamentos" class="sec"><div class="card"><h2 id="pagFormTitulo">Registrar pagamento</h2><p class="small">Selecione o empréstimo e a parcela paga. Use Buscar para achar o empréstimo pelo nome do cliente. Se o valor for menor que a parcela, a diferença é diluída nas parcelas restantes. Se for maior, você escolhe se o extra abate no valor emprestado ou na próxima parcela.</p><div class="busca-bar"><div><label>Buscar empréstimo do cliente</label><input id="buscaPagEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaPag">Buscar</button><button type="button" class="gray" id="limparBuscaPag">Limpar</button></div><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button><button class="gray" id="limparPag">Cancelar edição</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><p class="small">A busca acima também filtra este histórico pelo cliente.</p><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
 <section id="multas" class="sec"><div class="card"><h2>💸 Multas</h2><p class="small">Multas lançadas ao registrar pagamento, somente da cidade selecionada.</p><div class="m" style="max-width:280px"><small>Total de multas</small><b id="totalMultas">R$ 0,00</b></div></div><div class="card"><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaMulta" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaMulta">Buscar</button><button type="button" class="gray" id="limparBuscaMulta">Limpar</button></div><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbMultas"></tbody></table></div></div></section>
 <section id="faturamento" class="sec"><div class="card"><h2>💰 Faturamento</h2><p class="small">Valores recebidos no mês. Filtre por cidade e, se quiser, por uma data específica para ver o total daquele dia.</p><div class="grid"><div><label>Cidade</label><select id="fatCidade"><option value="">Todas as cidades</option></select></div><div><label>Mês</label><input id="fatMes" type="month"></div><div><label>Filtrar por data de pagamento</label><input id="fatData" type="date"></div></div><div class="actions"><button type="button" id="btnBuscaFat">Buscar</button><button type="button" class="gray" id="limparBuscaFat">Limpar filtros</button></div><div class="summary-grid" style="margin-top:14px"><div class="m"><small>Recebido no mês</small><b id="fatTotalMes">R$ 0,00</b></div><div class="m"><small>Pagamentos no mês</small><b id="fatQtdMes">0</b></div><div class="m"><small>Recebido na data filtrada</small><b id="fatTotalDia">R$ 0,00</b></div><div class="m"><small>Pagamentos na data</small><b id="fatQtdDia">0</b></div></div></div><div class="card"><h2 id="fatListaTitulo">Recebimentos do mês</h2><div class="table"><table><thead><tr><th>Data</th><th>Cidade</th><th>Cliente</th><th>Valor</th><th>Forma</th><th>Observação</th></tr></thead><tbody id="tbFaturamento"></tbody></table></div></div></section>
+<section id="despesas" class="sec"><div class="card"><h2 id="despFormTitulo">Nova despesa</h2><p class="small">Registre gastos da operação. Use os filtros abaixo para acompanhar o total do mês.</p><div class="grid"><div><label>Descrição</label><input id="despDesc" placeholder="Ex.: Combustível, aluguel, salário"></div><div><label>Valor</label><input id="despValor" type="number" step="0.01" min="0.01"></div><div><label>Data</label><input id="despData" type="date"></div><div><label>Cidade</label><select id="despCidade"><option value="">Todas / geral</option></select></div></div><label>Observação</label><textarea id="despObs" rows="2"></textarea><div class="actions"><button type="button" id="salvarDespesa">Salvar despesa</button><button type="button" class="gray" id="limparDespesa">Cancelar edição</button></div><input type="hidden" id="despEditId" value=""></div><div class="card"><h2>Despesas registradas</h2><div class="grid"><div><label>Cidade</label><select id="despFiltroCidade"><option value="">Todas as cidades</option></select></div><div><label>Mês</label><input id="despMes" type="month"></div></div><div class="summary-grid" style="margin-top:14px"><div class="m"><small>Total no mês</small><b id="despTotalMes">R$ 0,00</b></div><div class="m"><small>Quantidade</small><b id="despQtdMes">0</b></div></div><div class="table"><table><thead><tr><th>Data</th><th>Descrição</th><th>Cidade</th><th>Valor</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="tbDespesas"></tbody></table></div></div></section>
 <section id="verificacoes" class="sec"><div class="card"><h2>🔎 Verificações</h2><p class="small">Clientes que enviaram documentos pelo formulário de cadastro. Link para o cliente: <b id="linkFormCadastro"></b></p><div class="actions"><button class="gray" id="copiarLinkCadastro">Copiar link do cadastro</button><button class="gray" id="atualizarVerificacoes">Atualizar lista</button></div></div><div class="card"><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaVerif" placeholder="Digite o nome, WhatsApp ou CPF"></div><button type="button" id="btnBuscaVerif">Buscar</button><button type="button" class="gray" id="limparBuscaVerif">Limpar</button></div><div class="table"><table><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>CPF</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbVerificacoes"></tbody></table></div><div id="detalheVerificacao" class="hidden" style="margin-top:16px"></div></div></section>
 <section id="socios" class="sec"><div class="card"><h2>👥 Acessos ao Sistema</h2><p class="small">Cadastre sócios e funcionários. Cada pessoa terá usuário e senha próprios para entrar pelo mesmo link.</p><div class="grid"><div><label>Nome</label><input id="uNome" placeholder="Ex.: João Silva"></div><div><label>Usuário</label><input id="uUsuario" placeholder="Ex.: joao"></div><div><label>Senha inicial</label><input id="uSenha" type="password" placeholder="Mínimo 8 caracteres"></div><div><label>Tipo de acesso</label><select id="uPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — clientes, empréstimos e pagamentos</option></select></div></div><div class="actions"><button id="criarSocio">Adicionar acesso</button></div><div id="uErro" class="error"></div></div><div class="card"><h2>Usuários com acesso</h2><div class="busca-bar"><div><label>Buscar usuário</label><input id="buscaUsuario" placeholder="Digite o nome ou usuário"></div><button type="button" id="btnBuscaUsuario">Buscar</button><button type="button" class="gray" id="limparBuscaUsuario">Limpar</button></div><div class="table"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbUsuarios"></tbody></table></div></div></section>
 <section id="backup" class="sec"><div class="card"><h2>Backup e relatórios</h2><div class="actions"><button id="csvClientes">Clientes CSV</button><button id="csvEmp">Empréstimos CSV</button><button id="csvPag">Pagamentos CSV</button><button id="backupBtn">Baixar backup</button><label style="background:#475569;padding:11px 14px;border-radius:10px;font-weight:bold;cursor:pointer">Importar backup<input id="importar" type="file" accept=".json" style="display:none"></label><button class="red" id="apagar">Apagar tudo</button></div></div></section>
@@ -120,8 +122,8 @@
   raf=requestAnimationFrame(tick);
 })();
 const $=id=>document.getElementById(id);
-const BACKUP_INICIAL={clientes:[],emprestimos:[],pagamentos:[],cidades:[]};
-let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pendenteExcessoPag=null,pendenteFaltaPag=null;
+const BACKUP_INICIAL={clientes:[],emprestimos:[],pagamentos:[],cidades:[],despesas:[]};
+let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,editDesp=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pendenteExcessoPag=null,pendenteFaltaPag=null,pendenteMensagem=null;
 const POR_PAGINA=10;
 const btnEdit=(fn,id)=>`<button class="icon" title="Editar" onclick="${fn}('${id}')">✎</button>`;
 function fatia(lista,pag){
@@ -200,6 +202,7 @@ function save(){
   db.emprestimos=uniqueById(db.emprestimos);
   db.clientes=uniqueById(db.clientes);
   db.pagamentos=uniqueById(db.pagamentos);
+  db.despesas=uniqueById(db.despesas||[]);
   const metas=(db.emprestimos||[]).map(e=>({
     id:'meta_'+String(e.id),
     empId:String(e.id),
@@ -210,7 +213,7 @@ function save(){
     tipo:'emp_meta',
     obs:JSON.stringify({pasta:pastaEmp(e),historico:Array.isArray(e.historico)?e.historico:[],parcelasTipo:e.parcelasTipo||null})
   }));
-  const data={clientes:db.clientes,emprestimos:db.emprestimos,pagamentos:uniqueById((db.pagamentos||[]).filter(p=>!ehMeta(p)).concat(metas)),cidades:db.cidades||[]};
+  const data={clientes:db.clientes,emprestimos:db.emprestimos,pagamentos:uniqueById((db.pagamentos||[]).filter(p=>!ehMeta(p)).concat(metas)),cidades:db.cidades||[],despesas:uniqueById(db.despesas||[])};
   const rev=serverRevision;
   const seq=++saveSeq;
   saving=true;
@@ -243,9 +246,11 @@ async function load(){
   if(!Array.isArray(db.clientes)) db.clientes=[];
   if(!Array.isArray(db.emprestimos)) db.emprestimos=[];
   if(!Array.isArray(db.pagamentos)) db.pagamentos=[];
+  if(!Array.isArray(db.despesas)) db.despesas=[];
   db.clientes=uniqueById(db.clientes);
   db.emprestimos=uniqueById(db.emprestimos);
   db.pagamentos=uniqueById(db.pagamentos);
+  db.despesas=uniqueById(db.despesas);
   const porMeta=new Map();
   (db.pagamentos||[]).filter(ehMeta).forEach(p=>{
     try{porMeta.set(String(p.empId),JSON.parse(p.obs||'{}'));}catch{}
@@ -690,7 +695,16 @@ function textoCobranca(e){
   const minimo=restanteParcela(e,primeira);
   return `Olá, ${c.nome}. Tudo bem?\n\nConsta em nosso controle uma cobrança vencida em ${dataBR(primeira.data)}.\n\nQuitação total (emprestado + juros): ${brl(quitacao)}\nValor dos juros: ${brl(juros)}\nPagamento mínimo (parcela): ${brl(minimo)}\n\nDados para pagamento:\n💳 PIX – ${DADOS_COBRANCA.banco}\nTitular: ${DADOS_COBRANCA.titular}\nChave: ${DADOS_COBRANCA.pixExibir}\n\nApós o pagamento, por favor envie o comprovante. Obrigado.`;
 }
-window.cobrarWhatsApp=id=>{const e=db.emprestimos.find(x=>x.id===id);if(!e)return;if(!atrasado(e))return alert('Este empréstimo não possui pagamento vencido.');const c=db.clientes.find(x=>x.id===e.clienteId);const tel=telefoneWhatsApp(c?.tel);if(!tel)return alert('Cadastre o telefone do cliente para enviar a cobrança pelo WhatsApp.');const msg=encodeURIComponent(textoCobranca(e));window.open(`https://wa.me/${tel}?text=${msg}`,'_blank')}
+window.cobrarWhatsApp=id=>{
+  const e=db.emprestimos.find(x=>x.id===id);if(!e)return;
+  if(!atrasado(e))return alert('Este empréstimo não possui pagamento vencido.');
+  const c=db.clientes.find(x=>x.id===e.clienteId);
+  const tel=telefoneWhatsApp(c?.tel);
+  if(!tel)return alert('Cadastre o telefone do cliente para enviar a cobrança pelo WhatsApp.');
+  const padrao=textoCobranca(e);
+  if(!padrao)return alert('Não foi possível montar a mensagem de cobrança.');
+  abrirModalMensagem({tel,padrao,titulo:'Cobrança — '+(c?.nome||'Cliente'),resumo:'Revise a mensagem abaixo ou use a mensagem padrão do sistema.'});
+}
 function classificaEmp(e){
   if(!e||saldo(e)<=.01) return 'quitado';
   const pend=(e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01);
@@ -746,7 +760,7 @@ function renderSaude(){
  if($('saudeResumo')) $('saudeResumo').innerHTML=`<div class="m"><small>Clientes cadastrados</small><b>${clientes}</b></div><div class="m"><small>Clientes ativos</small><b>${clientesAtivos}</b></div><div class="m"><small>Clientes em atraso</small><b>${clientesAtrasados}</b></div><div class="m"><small>Empréstimos ativos</small><b>${emprestimosAtivos}</b></div><div class="m"><small>Parcelas vencidas</small><b>${parcelasVencidas}</b></div><div class="m"><small>Taxa de atraso</small><b>${(taxaAtraso*100).toFixed(1).replace('.',',')}%</b></div><div class="m"><small>Total recebido</small><b>${brl(recebido)}</b></div><div class="m"><small>Valor vencido</small><b>${brl(vencido)}</b></div>`;
  if($('saudeAnalise')) $('saudeAnalise').innerHTML=`<h3>Análise</h3>${motivos.map(m=>`<div class="notice ${nivel==='RUIM'?'late':''}">${esc(m)}</div>`).join('')}<p class="small">Critério: Ótima = menos de 15% dos clientes ativos em atraso; Boa = entre 15% e 35% ou alguns vencimentos acumulados; Ruim = 35% ou mais dos clientes ativos em atraso, ou combinação de muitos vencimentos e inadimplência.</p>`;
 }
-function render(skipSave){if(!skipSave)save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dTot').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.total),0));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dSal').textContent=brl(db.emprestimos.reduce((a,e)=>a+saldo(e),0));$('dLucro').textContent=brl(db.emprestimos.reduce((a,e)=>a+Math.max(0,Number(e.total)-Number(e.principal)),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);renderClientes();opts();renderEmp();renderPag();renderMultas();renderSaude();renderResumoListas();renderPaginaHistorico();if(clienteHistorico)renderHistorico(clienteHistorico)});renderFaturamento(); }
+function render(skipSave){if(!skipSave)save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dTot').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.total),0));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dSal').textContent=brl(db.emprestimos.reduce((a,e)=>a+saldo(e),0));$('dLucro').textContent=brl(db.emprestimos.reduce((a,e)=>a+Math.max(0,Number(e.total)-Number(e.principal)),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+e.parcelas.filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);renderClientes();opts();renderEmp();renderPag();renderMultas();renderSaude();renderResumoListas();renderPaginaHistorico();if(clienteHistorico)renderHistorico(clienteHistorico)});renderFaturamento();renderDespesas(); }
 function listaClientesView(){
   const q=qBusca('buscaCliente');
   return [...db.clientes].filter(c=>clienteBate(c,q)).sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')||a.nome.localeCompare(b.nome,'pt-BR'));
@@ -861,6 +875,28 @@ function podeVerFaturamento(){
   const u=String(currentUser?.usuario||'').toLowerCase();
   return u==='admin'||u==='alex';
 }
+function podeVerDespesas(){
+  const u=String(currentUser?.usuario||'').toLowerCase();
+  return u==='admin'||u==='alex'||currentUser?.papel==='socio';
+}
+function abrirModalMensagem(opts){
+  pendenteMensagem=opts||null;
+  if($('modalMensagemTitulo'))$('modalMensagemTitulo').textContent=opts?.titulo||'Enviar mensagem';
+  if($('modalMensagemResumo'))$('modalMensagemResumo').textContent=opts?.resumo||'Edite a mensagem ou use a padrão do sistema.';
+  if($('mensagemTexto'))$('mensagemTexto').value=opts?.padrao||'';
+  $('modalMensagem')?.classList.remove('hidden');
+}
+function fecharModalMensagem(){
+  pendenteMensagem=null;
+  $('modalMensagem')?.classList.add('hidden');
+}
+function enviarMensagemWhatsApp(){
+  if(!pendenteMensagem?.tel)return alert('Telefone não informado.');
+  const texto=($('mensagemTexto')&&$('mensagemTexto').value.trim())||pendenteMensagem.padrao||'';
+  if(!texto)return alert('Digite uma mensagem ou use a padrão do sistema.');
+  window.open(`https://wa.me/${pendenteMensagem.tel}?text=${encodeURIComponent(texto)}`,'_blank');
+  fecharModalMensagem();
+}
 function mesFaturamentoAtual(){
   const el=$('fatMes');
   if(el&&el.value) return el.value;
@@ -915,6 +951,73 @@ function renderFaturamento(){
     }).join(''):`<tr><td colspan="6" class="empty">${dataFiltro?'Nenhum valor recebido nesta data.':'Nenhum valor recebido neste mês.'}</td></tr>`;
   }
 }
+function mesDespesasAtual(){
+  const el=$('despMes');
+  if(el&&el.value) return el.value;
+  return hoje().slice(0,7);
+}
+function preencherSelectCidadesDesp(){
+  const opts=(db.cidades||[]).slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  ['despCidade','despFiltroCidade'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    const cur=el.value;
+    const base=id==='despCidade'?'<option value="">Todas / geral</option>':'<option value="">Todas as cidades</option>';
+    el.innerHTML=base+opts;
+    if(cur&&(db.cidades||[]).some(c=>String(c.id)===String(cur))) el.value=cur;
+  });
+}
+function limparDespesa(){
+  editDesp=null;
+  if($('despEditId'))$('despEditId').value='';
+  if($('despDesc'))$('despDesc').value='';
+  if($('despValor'))$('despValor').value='';
+  if($('despData'))$('despData').value=hoje();
+  if($('despCidade'))$('despCidade').value='';
+  if($('despObs'))$('despObs').value='';
+  if($('despFormTitulo'))$('despFormTitulo').textContent='Nova despesa';
+  if($('salvarDespesa'))$('salvarDespesa').textContent='Salvar despesa';
+}
+function renderDespesas(){
+  if(!podeVerDespesas()) return;
+  preencherSelectCidadesDesp();
+  const mes=mesDespesasAtual();
+  if($('despMes')&&!$('despMes').value)$('despMes').value=mes;
+  const cidFiltro=($('despFiltroCidade')&&$('despFiltroCidade').value)||'';
+  const lista=(db.despesas||[]).filter(d=>{
+    if(String(d.data||'').slice(0,7)!==mes) return false;
+    if(cidFiltro&&String(d.cidadeId||'')!==String(cidFiltro)) return false;
+    return true;
+  }).sort((a,b)=>b.data.localeCompare(a.data)||String(b.id).localeCompare(String(a.id)));
+  const total=lista.reduce((a,d)=>a+Number(d.valor||0),0);
+  if($('despTotalMes'))$('despTotalMes').textContent=brl(total);
+  if($('despQtdMes'))$('despQtdMes').textContent=String(lista.length);
+  if($('tbDespesas')){
+    $('tbDespesas').innerHTML=lista.length?lista.map(d=>{
+      const cidade=d.cidadeId?(cidadeObj(d.cidadeId)?.nome||'—'):'Geral';
+      return `<tr><td>${dataBR(d.data)}</td><td>${esc(d.descricao||'')}</td><td>${esc(cidade)}</td><td>${brl(d.valor)}</td><td>${esc(d.obs||'')}</td><td>${btnEdit('editarDespesa',d.id)} <button class="red" onclick="excluirDespesa('${d.id}')">Excluir</button></td></tr>`;
+    }).join(''):'<tr><td colspan="6" class="empty">Nenhuma despesa neste mês.</td></tr>';
+  }
+}
+window.editarDespesa=id=>{
+  const d=(db.despesas||[]).find(x=>String(x.id)===String(id)); if(!d) return;
+  editDesp=String(d.id);
+  if($('despEditId'))$('despEditId').value=String(d.id);
+  if($('despDesc'))$('despDesc').value=d.descricao||'';
+  if($('despValor'))$('despValor').value=d.valor||'';
+  if($('despData'))$('despData').value=d.data||hoje();
+  if($('despCidade'))$('despCidade').value=d.cidadeId||'';
+  if($('despObs'))$('despObs').value=d.obs||'';
+  if($('despFormTitulo'))$('despFormTitulo').textContent='Editar despesa';
+  if($('salvarDespesa'))$('salvarDespesa').textContent='Salvar alterações';
+  abrirAba('despesas');
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+window.excluirDespesa=id=>{
+  const d=(db.despesas||[]).find(x=>String(x.id)===String(id)); if(!d) return;
+  if(!confirm(`Excluir a despesa "${d.descricao}" de ${brl(d.valor)}?`)) return;
+  db.despesas=(db.despesas||[]).filter(x=>String(x.id)!==String(id));
+  render();
+};
 function renderPaginaHistorico(){
   const el=$('histPagina'); if(!el) return;
   const sel=$('histFiltroCliente');
@@ -1011,6 +1114,11 @@ function textoHistoricoCliente(id){
 window.compartilharCliente=async id=>{
   const c=db.clientes.find(x=>x.id===id);if(!c)return alert('Cliente não encontrado.');
   const texto=textoHistoricoCliente(id);
+  const tel=telefoneWhatsApp(c.tel);
+  if(tel){
+    abrirModalMensagem({tel,padrao:texto,titulo:'Histórico — '+c.nome,resumo:'Revise a mensagem antes de enviar pelo WhatsApp ou use a padrão do sistema.'});
+    return;
+  }
   try{
     if(navigator.share){await navigator.share({title:'Histórico - '+c.nome,text:texto});return;}
     if(navigator.clipboard){await navigator.clipboard.writeText(texto);alert('Histórico copiado. Agora é só colar no WhatsApp.');return;}
@@ -1577,7 +1685,7 @@ $('copiarLinkCadastro')?.addEventListener('click',async()=>{
 });
 $('atualizarVerificacoes')?.addEventListener('click',()=>renderVerificacoes());
 
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{abrirAba(b.dataset.t);if(b.dataset.t==='verificacoes')renderVerificacoes();if(b.dataset.t==='cidades')renderCidades();if(b.dataset.t==='historico')runScoped(renderPaginaHistorico);if(b.dataset.t==='faturamento')renderFaturamento();});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{abrirAba(b.dataset.t);if(b.dataset.t==='verificacoes')renderVerificacoes();if(b.dataset.t==='cidades')renderCidades();if(b.dataset.t==='historico')runScoped(renderPaginaHistorico);if(b.dataset.t==='faturamento')renderFaturamento();if(b.dataset.t==='despesas')renderDespesas();});
 document.querySelectorAll('#empSubtabs button').forEach(b=>b.onclick=()=>{empAba=b.dataset.empTab||'ativo';pageEmp=1;runScoped(renderEmp);});
 document.querySelectorAll('#resumoSubtabs button').forEach(b=>b.onclick=()=>{resumoAba=b.dataset.resumoTab||'ativo';runScoped(renderResumoListas);});
 $('btnBuscaFat')?.addEventListener('click',()=>renderFaturamento());
@@ -1586,6 +1694,28 @@ $('fatMes')?.addEventListener('change',()=>renderFaturamento());
 $('fatCidade')?.addEventListener('change',()=>renderFaturamento());
 $('fatData')?.addEventListener('change',()=>renderFaturamento());
 $('fatData')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderFaturamento();}});
+$('salvarDespesa')?.addEventListener('click',()=>{
+  const desc=($('despDesc')&&$('despDesc').value||'').trim();
+  const valor=Number($('despValor')&&$('despValor').value);
+  const data=($('despData')&&$('despData').value)||hoje();
+  const cidadeId=($('despCidade')&&$('despCidade').value)||'';
+  const obs=($('despObs')&&$('despObs').value||'').trim();
+  if(desc.length<2) return alert('Informe a descrição da despesa.');
+  if(!valor||valor<=0) return alert('Informe um valor válido.');
+  const idEdit=editDesp||($('despEditId')&&$('despEditId').value)||'';
+  const anterior=idEdit?(db.despesas||[]).find(x=>String(x.id)===String(idEdit)):null;
+  const item={id:idEdit||uid(),descricao:desc,valor:+valor.toFixed(2),data,cidadeId:cidadeId||null,obs,criadoEm:anterior?.criadoEm||hoje()};
+  db.despesas=upsertById(db.despesas||[],item);
+  limparDespesa();
+  render();
+});
+$('limparDespesa')?.addEventListener('click',limparDespesa);
+$('despMes')?.addEventListener('change',()=>renderDespesas());
+$('despFiltroCidade')?.addEventListener('change',()=>renderDespesas());
+$('enviarMensagemWhatsApp')?.addEventListener('click',enviarMensagemWhatsApp);
+$('usarMensagemPadrao')?.addEventListener('click',()=>{if($('mensagemTexto')&&pendenteMensagem)$('mensagemTexto').value=pendenteMensagem.padrao||'';});
+$('cancelarMensagem')?.addEventListener('click',fecharModalMensagem);
+if($('despData')&&!$('despData').value)$('despData').value=hoje();
 $('btnBuscaEmp')?.addEventListener('click',()=>{pageEmp=1;runScoped(renderEmp)});
 $('limparBuscaEmp')?.addEventListener('click',()=>{if($('buscaEmp'))$('buscaEmp').value='';pageEmp=1;runScoped(renderEmp)});
 $('buscaEmp')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pageEmp=1;runScoped(renderEmp)}});
@@ -1618,10 +1748,15 @@ function aplicarPermissoes(){
   const franca=currentUser?.portal==='franca';
   const gerenciaAcessos=!franca&&(currentUser?.papel==='admin'||currentUser?.papel==='socio');
   const verFat=podeVerFaturamento();
+  const verDesp=podeVerDespesas();
   document.querySelector('.dash')?.classList.toggle('hidden',funcionario||franca);
   document.querySelectorAll('.tabs button').forEach(b=>{
     if(b.id==='tabFaturamento'){
       b.classList.toggle('hidden',!verFat);
+      return;
+    }
+    if(b.id==='tabDespesas'){
+      b.classList.toggle('hidden',!verDesp);
       return;
     }
     if(franca||funcionario) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','pagamentos','historico','multas'].includes(b.dataset.t));
@@ -1642,7 +1777,7 @@ function aplicarPermissoes(){
   }
   if(funcionario||franca){
     const abaAtiva=document.querySelector('.tabs button.active')?.dataset?.t;
-    if(!verFat||abaAtiva!=='faturamento') abrirAba('resumo');
+    if((!verFat||abaAtiva!=='faturamento')&&(!verDesp||abaAtiva!=='despesas')) abrirAba('resumo');
     if($('historicoCliente'))$('historicoCliente').classList.add('hidden');
   }
 }
