@@ -22,8 +22,12 @@ CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_users (
   active BOOLEAN NOT NULL DEFAULT TRUE,
   salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  cidades_ids JSONB DEFAULT NULL
 );
+
+ALTER TABLE public.gestaoemprestimosalex_users
+  ADD COLUMN IF NOT EXISTS cidades_ids JSONB DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_cidades (
   id TEXT PRIMARY KEY,

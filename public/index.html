@@ -20,6 +20,7 @@
 <div id="modalExcessoPag" class="modal hidden"><div class="modal-box"><h2>Valor maior que a parcela</h2><p class="small" id="excessoPagTexto"></p><p class="small">O que deseja fazer com o valor extra?</p><div class="actions"><button type="button" id="excessoAbaterEmp">Abater no valor emprestado</button><button type="button" class="green" id="excessoProxParc">Diminuir da próxima parcela</button><button type="button" class="gray" id="cancelarExcessoPag">Cancelar</button></div></div></div>
 <div id="modalFaltaPag" class="modal hidden"><div class="modal-box"><h2>Valor menor que a parcela</h2><p class="small" id="faltaPagTexto"></p><p class="small">O que deseja fazer com a diferença?</p><div class="actions"><button type="button" class="green" id="faltaProxParc">Incluir na próxima parcela</button><button type="button" id="faltaDiluir">Diluir nas parcelas restantes</button><button type="button" class="gray" id="faltaParcial">Registrar pagamento parcial</button><button type="button" class="gray" id="cancelarFaltaPag">Cancelar</button></div></div></div>
 <div id="modalMensagem" class="modal hidden"><div class="modal-box"><h2 id="modalMensagemTitulo">Enviar mensagem</h2><p class="small" id="modalMensagemResumo"></p><label>Mensagem</label><textarea id="mensagemTexto" rows="10" style="resize:vertical;min-height:160px"></textarea><div class="actions"><button type="button" class="green" id="enviarMensagemWhatsApp">Enviar no WhatsApp</button><button type="button" class="gray" id="usarMensagemPadrao">Usar mensagem padrão</button><button type="button" class="gray" id="cancelarMensagem">Cancelar</button></div></div></div>
+<div id="modalCidadesUsuario" class="modal hidden"><div class="modal-box"><h2>Cidades de acesso</h2><p class="small" id="modalCidadesUsuarioResumo">Selecione as cidades que este usuário poderá acessar.</p><input type="hidden" id="editCidadesUsuarioId"><div id="editCidadesUsuarioBox" class="notice" style="max-height:220px;overflow:auto"></div><div class="actions"><button type="button" id="salvarCidadesUsuario">Salvar cidades</button><button type="button" class="gray" id="cancelarCidadesUsuario">Cancelar</button></div><div id="editCidadesUsuarioErro" class="error"></div></div></div>
 <div id="loginScreen" class="login-screen">
   <div class="login-box" id="loginBoxPrincipal">
     <h1>Empréstimos — Imperatriz/MA</h1>
@@ -55,7 +56,7 @@
 <section id="faturamento" class="sec"><div class="card"><h2>💰 Faturamento</h2><p class="small">Valores recebidos no mês. Filtre por cidade e, se quiser, por uma data específica para ver o total daquele dia.</p><div class="grid"><div><label>Cidade</label><select id="fatCidade"><option value="">Todas as cidades</option></select></div><div><label>Mês</label><input id="fatMes" type="month"></div><div><label>Filtrar por data de pagamento</label><input id="fatData" type="date"></div></div><div class="actions"><button type="button" id="btnBuscaFat">Buscar</button><button type="button" class="gray" id="limparBuscaFat">Limpar filtros</button></div><div class="summary-grid" style="margin-top:14px"><div class="m"><small>Recebido no mês</small><b id="fatTotalMes">R$ 0,00</b></div><div class="m"><small>Pagamentos no mês</small><b id="fatQtdMes">0</b></div><div class="m"><small>Recebido na data filtrada</small><b id="fatTotalDia">R$ 0,00</b></div><div class="m"><small>Pagamentos na data</small><b id="fatQtdDia">0</b></div></div></div><div class="card"><h2 id="fatListaTitulo">Recebimentos do mês</h2><div class="table"><table><thead><tr><th>Data</th><th>Cidade</th><th>Cliente</th><th>Valor</th><th>Forma</th><th>Observação</th></tr></thead><tbody id="tbFaturamento"></tbody></table></div></div></section>
 <section id="despesas" class="sec"><div class="card"><h2 id="despFormTitulo">Nova despesa</h2><p class="small">Registre gastos da operação. Use os filtros abaixo para acompanhar o total do mês.</p><div class="grid"><div><label>Descrição</label><input id="despDesc" placeholder="Ex.: Combustível, aluguel, salário"></div><div><label>Valor</label><input id="despValor" type="number" step="0.01" min="0.01"></div><div><label>Data</label><input id="despData" type="date"></div><div><label>Cidade</label><select id="despCidade"><option value="">Todas / geral</option></select></div></div><label>Observação</label><textarea id="despObs" rows="2"></textarea><div class="actions"><button type="button" id="salvarDespesa">Salvar despesa</button><button type="button" class="gray" id="limparDespesa">Cancelar edição</button></div><input type="hidden" id="despEditId" value=""></div><div class="card"><h2>Despesas registradas</h2><div class="grid"><div><label>Cidade</label><select id="despFiltroCidade"><option value="">Todas as cidades</option></select></div><div><label>Mês</label><input id="despMes" type="month"></div></div><div class="summary-grid" style="margin-top:14px"><div class="m"><small>Total no mês</small><b id="despTotalMes">R$ 0,00</b></div><div class="m"><small>Quantidade</small><b id="despQtdMes">0</b></div></div><div class="table"><table><thead><tr><th>Data</th><th>Descrição</th><th>Cidade</th><th>Valor</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="tbDespesas"></tbody></table></div></div></section>
 <section id="verificacoes" class="sec"><div class="card"><h2>🔎 Verificações</h2><p class="small">Clientes que enviaram documentos pelo formulário de cadastro. Link para o cliente: <b id="linkFormCadastro"></b></p><div class="actions"><button class="gray" id="copiarLinkCadastro">Copiar link do cadastro</button><button class="gray" id="atualizarVerificacoes">Atualizar lista</button></div></div><div class="card"><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaVerif" placeholder="Digite o nome, WhatsApp ou CPF"></div><button type="button" id="btnBuscaVerif">Buscar</button><button type="button" class="gray" id="limparBuscaVerif">Limpar</button></div><div class="table"><table><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>CPF</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbVerificacoes"></tbody></table></div><div id="detalheVerificacao" class="hidden" style="margin-top:16px"></div></div></section>
-<section id="socios" class="sec"><div class="card"><h2>👥 Acessos ao Sistema</h2><p class="small">Cadastre sócios e funcionários. Cada pessoa terá usuário e senha próprios para entrar pelo mesmo link.</p><div class="grid"><div><label>Nome</label><input id="uNome" placeholder="Ex.: João Silva"></div><div><label>Usuário</label><input id="uUsuario" placeholder="Ex.: joao"></div><div><label>Senha inicial</label><input id="uSenha" type="password" placeholder="Mínimo 8 caracteres"></div><div><label>Tipo de acesso</label><select id="uPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — clientes, empréstimos e pagamentos</option></select></div></div><div class="actions"><button id="criarSocio">Adicionar acesso</button></div><div id="uErro" class="error"></div></div><div class="card"><h2>Usuários com acesso</h2><div class="busca-bar"><div><label>Buscar usuário</label><input id="buscaUsuario" placeholder="Digite o nome ou usuário"></div><button type="button" id="btnBuscaUsuario">Buscar</button><button type="button" class="gray" id="limparBuscaUsuario">Limpar</button></div><div class="table"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbUsuarios"></tbody></table></div></div></section>
+<section id="socios" class="sec"><div class="card"><h2>👥 Acessos ao Sistema</h2><p class="small">Cadastre sócios e funcionários. Escolha quais cidades cada pessoa poderá ver e operar.</p><div class="grid"><div><label>Nome</label><input id="uNome" placeholder="Ex.: João Silva"></div><div><label>Usuário</label><input id="uUsuario" placeholder="Ex.: joao"></div><div><label>Senha inicial</label><input id="uSenha" type="password" placeholder="Mínimo 8 caracteres"></div><div><label>Tipo de acesso</label><select id="uPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — clientes, empréstimos e pagamentos</option></select></div></div><label>Cidades com acesso</label><div id="uCidadesBox" class="notice" style="margin-top:6px;max-height:180px;overflow:auto"></div><p class="small">Marque ao menos uma cidade. A pessoa só verá clientes e lançamentos dessas unidades.</p><div class="actions"><button id="criarSocio">Adicionar acesso</button></div><div id="uErro" class="error"></div></div><div class="card"><h2>Usuários com acesso</h2><div class="busca-bar"><div><label>Buscar usuário</label><input id="buscaUsuario" placeholder="Digite o nome ou usuário"></div><button type="button" id="btnBuscaUsuario">Buscar</button><button type="button" class="gray" id="limparBuscaUsuario">Limpar</button></div><div class="table"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th>Cidades</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbUsuarios"></tbody></table></div></div></section>
 <section id="backup" class="sec"><div class="card"><h2>Backup e relatórios</h2><div class="actions"><button id="csvClientes">Clientes CSV</button><button id="csvEmp">Empréstimos CSV</button><button id="csvPag">Pagamentos CSV</button><button id="backupBtn">Baixar backup</button><label style="background:#475569;padding:11px 14px;border-radius:10px;font-weight:bold;cursor:pointer">Importar backup<input id="importar" type="file" accept=".json" style="display:none"></label><button class="red" id="apagar">Apagar tudo</button></div></div></section>
 </main><script>
 (function(){
@@ -311,15 +312,50 @@ function runScoped(fn){
   try{ fn(); } finally { db.clientes=prev.clientes; db.emprestimos=prev.emprestimos; db.pagamentos=prev.pagamentos; }
 }
 function preencherCidadesSelect(){
-  const opts=(db.cidades||[]).slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  const permitidas=cidadesPermitidasUsuario();
+  const opts=permitidas.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   ['cidadeResumo','cidadeTopo'].forEach(id=>{
     const el=$(id); if(!el) return;
     el.innerHTML='<option value="">Selecione a cidade</option>'+opts;
     el.value=cidadeAtualId||'';
   });
+  if(cidadeAtualId&&!permitidas.some(c=>String(c.id)===String(cidadeAtualId))){
+    cidadeAtualId=permitidas[0]?.id||'';
+    if(cidadeAtualId) localStorage.setItem('cidadeAtualId',cidadeAtualId);
+    else localStorage.removeItem('cidadeAtualId');
+    ['cidadeResumo','cidadeTopo'].forEach(id=>{const el=$(id);if(el)el.value=cidadeAtualId||'';});
+  }
   const nome=cidadeObj(cidadeAtualId)?.nome||'';
   if($('subtituloApp')) $('subtituloApp').textContent=nome?('Unidade: '+nome+' — clientes e lançamentos desta cidade, sem misturar com as outras.'):'Selecione a cidade para ver os clientes daquela unidade. Os cadastros não se misturam.';
   if($('cidadeAviso')) $('cidadeAviso').innerHTML=nome?`<b>Mostrando somente ${esc(nome)}</b>`:'<b>Nenhuma cidade selecionada.</b> Cadastre uma cidade na aba Cidades e selecione-a aqui.';
+}
+function cidadesPermitidasUsuario(){
+  const todas=(db.cidades||[]).slice();
+  if(!usuarioTemCidadesRestritas(currentUser)) return todas;
+  const ids=new Set(currentUser.cidadesIds.map(String));
+  return todas.filter(c=>ids.has(String(c.id)));
+}
+function usuarioTemCidadesRestritas(u){
+  return Boolean(u&&Array.isArray(u.cidadesIds)&&u.cidadesIds.length);
+}
+function rotuloCidadesUsuario(u){
+  if(u?.papel==='admin') return 'Todas';
+  if(!Array.isArray(u?.cidadesIds)||!u.cidadesIds.length) return 'Todas';
+  const nomes=u.cidadesIds.map(id=>cidadeObj(id)?.nome||id).filter(Boolean);
+  return nomes.length?nomes.join(', '):'—';
+}
+function htmlCheckCidades(containerId,selecionadas){
+  const el=$(containerId); if(!el) return;
+  const sel=new Set((selecionadas||[]).map(String));
+  const lista=(db.cidades||[]).slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  if(!lista.length){
+    el.innerHTML='<span class="small">Cadastre cidades na aba Cidades antes de criar acessos.</span>';
+    return;
+  }
+  el.innerHTML=lista.map(c=>`<label style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" class="chk-cidade-acesso" value="${esc(c.id)}" ${sel.has(String(c.id))?'checked':''}> ${esc(c.nome)}</label>`).join('');
+}
+function cidadesIdsSelecionadas(containerId){
+  return [...document.querySelectorAll('#'+containerId+' .chk-cidade-acesso:checked')].map(el=>el.value);
 }
 function escolherCidade(id){
   cidadeAtualId=id||'';
@@ -1590,6 +1626,7 @@ let listaUsuarios=[];
 async function renderUsuarios(){
   if(!currentUser||(currentUser.papel!=='admin'&&currentUser.papel!=='socio')){if($('tabSocios'))$('tabSocios').classList.add('hidden');return;}
   $('tabSocios').classList.remove('hidden');
+  htmlCheckCidades('uCidadesBox',[]);
   try{
     listaUsuarios=await api('/api/usuarios');
     pintarUsuarios();
@@ -1598,19 +1635,42 @@ async function renderUsuarios(){
 function pintarUsuarios(){
   const q=qBusca('buscaUsuario');
   const lista=!q?listaUsuarios:listaUsuarios.filter(u=>((u.nome||'')+' '+(u.usuario||'')).toLowerCase().includes(q));
-  $('tbUsuarios').innerHTML=lista.length?lista.map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(u.usuario)}</td><td>${u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio'}</td><td>${u.ativo!==false?'<span class="ok">Ativo</span>':'<span class="late">Desativado</span>'}</td><td>${u.papel==='admin'?'<span class="small">Acesso principal</span>':`<button class="gray" onclick="trocarSenhaUsuario('${u.id}')">Trocar senha</button> <button class="${u.ativo!==false?'red':'green'}" onclick="alternarUsuario('${u.id}',${u.ativo!==false?'false':'true'})">${u.ativo!==false?'Desativar':'Ativar'}</button>`}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum usuário encontrado nesta busca.</td></tr>';
+  $('tbUsuarios').innerHTML=lista.length?lista.map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(u.usuario)}</td><td>${u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio'}</td><td class="small">${esc(rotuloCidadesUsuario(u))}</td><td>${u.ativo!==false?'<span class="ok">Ativo</span>':'<span class="late">Desativado</span>'}</td><td>${u.papel==='admin'?'<span class="small">Acesso principal</span>':`<button class="gray" onclick="editarCidadesUsuario('${u.id}')">Cidades</button> <button class="gray" onclick="trocarSenhaUsuario('${u.id}')">Trocar senha</button> <button class="${u.ativo!==false?'red':'green'}" onclick="alternarUsuario('${u.id}',${u.ativo!==false?'false':'true'})">${u.ativo!==false?'Desativar':'Ativar'}</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum usuário encontrado nesta busca.</td></tr>';
 }
 $('criarSocio').onclick=async()=>{
   $('uErro').textContent='';
   const nome=$('uNome').value.trim(),usuario=$('uUsuario').value.trim(),senha=$('uSenha').value,papel=$('uPapel').value;
+  const cidadesIds=cidadesIdsSelecionadas('uCidadesBox');
+  if(!cidadesIds.length){$('uErro').textContent='Selecione ao menos uma cidade de acesso.';return;}
   try{
-    await api('/api/usuarios',{method:'POST',body:JSON.stringify({nome,usuario,senha,papel})});
+    await api('/api/usuarios',{method:'POST',body:JSON.stringify({nome,usuario,senha,papel,cidadesIds})});
     $('uNome').value='';$('uUsuario').value='';$('uSenha').value='';
+    htmlCheckCidades('uCidadesBox',[]);
     await renderUsuarios();alert('Acesso adicionado. A pessoa já pode entrar pelo mesmo link com o usuário e senha cadastrados.');
   }catch(e){$('uErro').textContent=e.message;}
 };
 window.alternarUsuario=async(id,ativo)=>{try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({ativo})});await renderUsuarios()}catch(e){alert(e.message)}};
 window.trocarSenhaUsuario=async id=>{const senha=prompt('Digite a nova senha do usuário (mínimo 8 caracteres):');if(!senha)return;try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({senha})});alert('Senha alterada.')}catch(e){alert(e.message)}};
+window.editarCidadesUsuario=id=>{
+  const u=listaUsuarios.find(x=>String(x.id)===String(id)); if(!u||u.papel==='admin') return;
+  if($('editCidadesUsuarioId'))$('editCidadesUsuarioId').value=String(u.id);
+  if($('modalCidadesUsuarioResumo'))$('modalCidadesUsuarioResumo').textContent='Usuário: '+(u.nome||u.usuario)+' — marque as cidades permitidas.';
+  if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent='';
+  htmlCheckCidades('editCidadesUsuarioBox',u.cidadesIds||[]);
+  $('modalCidadesUsuario')?.classList.remove('hidden');
+};
+$('cancelarCidadesUsuario')?.addEventListener('click',()=>$('modalCidadesUsuario')?.classList.add('hidden'));
+$('salvarCidadesUsuario')?.addEventListener('click',async()=>{
+  const id=$('editCidadesUsuarioId')?.value;
+  const cidadesIds=cidadesIdsSelecionadas('editCidadesUsuarioBox');
+  if(!id)return;
+  if(!cidadesIds.length){if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent='Selecione ao menos uma cidade.';return;}
+  try{
+    await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({cidadesIds})});
+    $('modalCidadesUsuario')?.classList.add('hidden');
+    await renderUsuarios();
+  }catch(e){if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent=e.message;}
+});
 
 const ROTULOS_DOC={rg_frente:'RG frente',rg_verso:'RG verso',cpf_foto:'CPF',comprovante_endereco:'Comprovante de endereço',ctps_identificacao:'CTPS identificação',ctps_historico:'CTPS histórico'};
 let listaVerificacoes=[];
@@ -1685,7 +1745,7 @@ $('copiarLinkCadastro')?.addEventListener('click',async()=>{
 });
 $('atualizarVerificacoes')?.addEventListener('click',()=>renderVerificacoes());
 
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{abrirAba(b.dataset.t);if(b.dataset.t==='verificacoes')renderVerificacoes();if(b.dataset.t==='cidades')renderCidades();if(b.dataset.t==='historico')runScoped(renderPaginaHistorico);if(b.dataset.t==='faturamento')renderFaturamento();if(b.dataset.t==='despesas')renderDespesas();});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{abrirAba(b.dataset.t);if(b.dataset.t==='verificacoes')renderVerificacoes();if(b.dataset.t==='cidades')renderCidades();if(b.dataset.t==='historico')runScoped(renderPaginaHistorico);if(b.dataset.t==='faturamento')renderFaturamento();if(b.dataset.t==='despesas')renderDespesas();if(b.dataset.t==='socios')renderUsuarios();});
 document.querySelectorAll('#empSubtabs button').forEach(b=>b.onclick=()=>{empAba=b.dataset.empTab||'ativo';pageEmp=1;runScoped(renderEmp);});
 document.querySelectorAll('#resumoSubtabs button').forEach(b=>b.onclick=()=>{resumoAba=b.dataset.resumoTab||'ativo';runScoped(renderResumoListas);});
 $('btnBuscaFat')?.addEventListener('click',()=>renderFaturamento());

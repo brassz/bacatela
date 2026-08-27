@@ -96,7 +96,16 @@ function getSession(req) {
   return { token, user: s.user, expira: s.expira };
 }
 
-function safeUser(u) { return { id: u.id, usuario: u.usuario, nome: u.nome, papel: u.papel, ativo: u.ativo !== false }; }
+function safeUser(u) {
+  return {
+    id: u.id,
+    usuario: u.usuario,
+    nome: u.nome,
+    papel: u.papel,
+    ativo: u.ativo !== false,
+    cidadesIds: Array.isArray(u.cidadesIds) ? u.cidadesIds.map(String) : null
+  };
+}
 function uniqueById(arr) {
   const m = new Map();
   for (const x of arr || []) {
@@ -104,6 +113,52 @@ function uniqueById(arr) {
     m.set(String(x.id), Object.assign({}, x, { id: String(x.id) }));
   }
   return Array.from(m.values());
+}
+function normalizarCidadesIds(raw) {
+  if (!Array.isArray(raw)) return null;
+  const ids = [...new Set(raw.map(x => String(x || '').trim()).filter(Boolean))];
+  return ids.length ? ids : null;
+}
+function usuarioTemCidadesRestritas(user) {
+  return Boolean(user && Array.isArray(user.cidadesIds) && user.cidadesIds.length);
+}
+function filtrarDadosPorCidades(data, cidadesIds) {
+  const ids = new Set((cidadesIds || []).map(String));
+  const cidades = (data.cidades || []).filter(z => ids.has(String(z.id)));
+  const clientes = (data.clientes || []).filter(c => {
+    if (c.cidadeId && ids.has(String(c.cidadeId))) return true;
+    const porNome = cidades.find(z => z.nome === c.unidade || z.nome === c.cidade);
+    return Boolean(porNome);
+  });
+  const idsCli = new Set(clientes.map(c => String(c.id)));
+  const emprestimos = (data.emprestimos || []).filter(e => idsCli.has(String(e.clienteId)));
+  const eids = new Set(emprestimos.map(e => String(e.id)));
+  const pagamentos = (data.pagamentos || []).filter(p => eids.has(String(p.empId)));
+  const despesas = (data.despesas || []).filter(d => !d.cidadeId || ids.has(String(d.cidadeId)));
+  return { clientes, emprestimos, pagamentos, cidades, despesas };
+}
+function mesclarDadosPorCidades(atual, recebido, cidadesIds) {
+  const ids = new Set((cidadesIds || []).map(String));
+  const outrosCli = (atual.clientes || []).filter(c => {
+    if (c.cidadeId && ids.has(String(c.cidadeId))) return false;
+    const porNome = (atual.cidades || []).find(z => ids.has(String(z.id)) && (z.nome === c.unidade || z.nome === c.cidade));
+    return !porNome;
+  });
+  const idsOutrosCli = new Set(outrosCli.map(c => String(c.id)));
+  const cliEscopo = uniqueById(recebido.clientes || []).filter(c => !idsOutrosCli.has(String(c.id)));
+  const clientes = uniqueById(outrosCli.concat(cliEscopo));
+  const idsEscopoCli = new Set(cliEscopo.map(c => String(c.id)));
+  const outrosEmp = (atual.emprestimos || []).filter(e => idsOutrosCli.has(String(e.clienteId)));
+  const empEscopo = uniqueById(recebido.emprestimos || []).filter(e => idsEscopoCli.has(String(e.clienteId)));
+  const emprestimos = uniqueById(outrosEmp.concat(empEscopo));
+  const idsOutrosEmp = new Set(outrosEmp.map(e => String(e.id)));
+  const outrosPag = (atual.pagamentos || []).filter(p => idsOutrosEmp.has(String(p.empId)));
+  const pagEscopo = uniqueById(recebido.pagamentos || []).filter(p => !idsOutrosEmp.has(String(p.empId)));
+  const pagamentos = uniqueById(outrosPag.concat(pagEscopo));
+  const outrasDesp = (atual.despesas || []).filter(d => d.cidadeId && !ids.has(String(d.cidadeId)));
+  const despEscopo = uniqueById(recebido.despesas || []).filter(d => !d.cidadeId || ids.has(String(d.cidadeId)));
+  const despesas = uniqueById(outrasDesp.concat(despEscopo));
+  return { clientes, emprestimos, pagamentos, cidades: atual.cidades || [], despesas };
 }
 function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio') && !ehPortalFranca(user); }
 const FRANCA_LOGIN_IDS = new Set([
@@ -414,11 +469,13 @@ async function handleApi(req, res) {
       if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) return json(res, 400, { erro: 'Usuário deve ter 3 a 30 caracteres: letras, números, ponto, traço ou sublinhado.' });
       if (nome.length < 2) return json(res, 400, { erro: 'Informe o nome do usuário.' });
       if (senha.length < 8) return json(res, 400, { erro: 'A senha deve ter pelo menos 8 caracteres.' });
+      const cidadesIds = normalizarCidadesIds(body.cidadesIds);
+      if (!cidadesIds || !cidadesIds.length) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
       const arr = await db.readUsers();
       if (arr.some(x => x.usuario.toLowerCase() === usuario)) return json(res, 409, { erro: 'Este usuário já existe.' });
       const cred = hashSenha(senha);
       const papel = body.papel === 'funcionario' ? 'funcionario' : 'socio';
-      const novo = { id: crypto.randomUUID(), usuario, nome, papel, ativo: true, criadoEm: new Date().toISOString(), ...cred };
+      const novo = { id: crypto.randomUUID(), usuario, nome, papel, ativo: true, criadoEm: new Date().toISOString(), cidadesIds, ...cred };
       arr.push(novo); await db.writeUsers(arr);
       return json(res, 201, safeUser(novo));
     } catch { return json(res, 400, { erro: 'Não foi possível criar o sócio.' }); }
@@ -438,6 +495,11 @@ async function handleApi(req, res) {
         if (body.senha.length < 8) return json(res, 400, { erro: 'A nova senha deve ter pelo menos 8 caracteres.' });
         Object.assign(u, hashSenha(body.senha));
       }
+      if (body.cidadesIds !== undefined && u.papel !== 'admin') {
+        const cidadesIds = normalizarCidadesIds(body.cidadesIds);
+        if (!cidadesIds || !cidadesIds.length) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
+        u.cidadesIds = cidadesIds;
+      }
       await db.writeUsers(arr); return json(res, 200, safeUser(u));
     } catch { return json(res, 400, { erro: 'Não foi possível alterar o usuário.' }); }
   }
@@ -447,6 +509,9 @@ async function handleApi(req, res) {
       const atual = await db.readDb();
       if (ehPortalFranca(session.user)) {
         return json(res, 200, { revision: atual.revision, data: filtrarDadosFranca(atual.data || {}) });
+      }
+      if (usuarioTemCidadesRestritas(session.user)) {
+        return json(res, 200, { revision: atual.revision, data: filtrarDadosPorCidades(atual.data || {}, session.user.cidadesIds) });
       }
       if (session.user.papel === 'funcionario') {
         return json(res, 200, { revision: atual.revision, data: { clientes: atual.data.clientes, emprestimos: atual.data.emprestimos || [], pagamentos: atual.data.pagamentos || [], cidades: atual.data.cidades || [], despesas: atual.data.despesas || [] } });
@@ -474,6 +539,8 @@ async function handleApi(req, res) {
       let dadosSalvar = data;
       if (ehPortalFranca(session.user)) {
         dadosSalvar = mesclarDadosFranca(atual.data || {}, data);
+      } else if (usuarioTemCidadesRestritas(session.user)) {
+        dadosSalvar = mesclarDadosPorCidades(atual.data || {}, data, session.user.cidadesIds);
       } else if (session.user.papel === 'funcionario') {
         const idsAtuais = new Set(atual.data.clientes.map(c => String(c.id)));
         const existentesBody = data.clientes.filter(c => idsAtuais.has(String(c.id)));
