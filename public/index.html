@@ -20,7 +20,7 @@
 <div id="modalExcessoPag" class="modal hidden"><div class="modal-box"><h2>Valor maior que a parcela</h2><p class="small" id="excessoPagTexto"></p><p class="small">O que deseja fazer com o valor extra?</p><div class="actions"><button type="button" id="excessoAbaterEmp">Abater no valor emprestado</button><button type="button" class="green" id="excessoProxParc">Diminuir da próxima parcela</button><button type="button" class="gray" id="cancelarExcessoPag">Cancelar</button></div></div></div>
 <div id="modalFaltaPag" class="modal hidden"><div class="modal-box"><h2>Valor menor que a parcela</h2><p class="small" id="faltaPagTexto"></p><p class="small">O que deseja fazer com a diferença?</p><div class="actions"><button type="button" class="green" id="faltaProxParc">Incluir na próxima parcela</button><button type="button" id="faltaDiluir">Diluir nas parcelas restantes</button><button type="button" class="gray" id="faltaParcial">Registrar pagamento parcial</button><button type="button" class="gray" id="cancelarFaltaPag">Cancelar</button></div></div></div>
 <div id="modalMensagem" class="modal hidden"><div class="modal-box"><h2 id="modalMensagemTitulo">Enviar mensagem</h2><p class="small" id="modalMensagemResumo"></p><label>Mensagem</label><textarea id="mensagemTexto" rows="10" style="resize:vertical;min-height:160px"></textarea><div class="actions"><button type="button" class="green" id="enviarMensagemWhatsApp">Enviar no WhatsApp</button><button type="button" class="gray" id="usarMensagemPadrao">Usar mensagem padrão</button><button type="button" class="gray" id="cancelarMensagem">Cancelar</button></div></div></div>
-<div id="modalCidadesUsuario" class="modal hidden"><div class="modal-box"><h2>Cidades de acesso</h2><p class="small" id="modalCidadesUsuarioResumo">Selecione as cidades que este usuário poderá acessar.</p><input type="hidden" id="editCidadesUsuarioId"><div id="editCidadesUsuarioBox" class="notice" style="max-height:220px;overflow:auto"></div><div class="actions"><button type="button" id="salvarCidadesUsuario">Salvar cidades</button><button type="button" class="gray" id="cancelarCidadesUsuario">Cancelar</button></div><div id="editCidadesUsuarioErro" class="error"></div></div></div>
+<div id="modalEditarUsuario" class="modal hidden"><div class="modal-box"><h2>Editar acesso</h2><p class="small" id="modalEditarUsuarioResumo">Altere as informações e as cidades que este usuário poderá acessar.</p><input type="hidden" id="editUsuarioId"><div class="grid"><div><label>Nome</label><input id="editUsuarioNome" placeholder="Ex.: João Silva"></div><div><label>Usuário (login)</label><input id="editUsuarioLogin" placeholder="Ex.: joao"></div><div><label>Tipo de acesso</label><select id="editUsuarioPapel"><option value="socio">Sócio — acesso completo</option><option value="funcionario">Funcionário — clientes, empréstimos e pagamentos</option></select></div><div><label>Nova senha</label><input id="editUsuarioSenha" type="password" placeholder="Deixe em branco para manter a atual"></div></div><label>Cidades com acesso</label><div id="editUsuarioCidadesBox" class="notice" style="margin-top:6px;max-height:220px;overflow:auto"></div><p class="small">Marque ao menos uma cidade. A pessoa só verá clientes e lançamentos dessas unidades.</p><div class="actions"><button type="button" id="salvarEditarUsuario">Salvar alterações</button><button type="button" class="gray" id="cancelarEditarUsuario">Cancelar</button></div><div id="editUsuarioErro" class="error"></div></div></div>
 <div id="loginScreen" class="login-screen">
   <div class="login-box" id="loginBoxPrincipal">
     <h1>Empréstimos — Imperatriz/MA</h1>
@@ -1635,7 +1635,7 @@ async function renderUsuarios(){
 function pintarUsuarios(){
   const q=qBusca('buscaUsuario');
   const lista=!q?listaUsuarios:listaUsuarios.filter(u=>((u.nome||'')+' '+(u.usuario||'')).toLowerCase().includes(q));
-  $('tbUsuarios').innerHTML=lista.length?lista.map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(u.usuario)}</td><td>${u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio'}</td><td class="small">${esc(rotuloCidadesUsuario(u))}</td><td>${u.ativo!==false?'<span class="ok">Ativo</span>':'<span class="late">Desativado</span>'}</td><td>${u.papel==='admin'?'<span class="small">Acesso principal</span>':`<button class="gray" onclick="editarCidadesUsuario('${u.id}')">Cidades</button> <button class="gray" onclick="trocarSenhaUsuario('${u.id}')">Trocar senha</button> <button class="${u.ativo!==false?'red':'green'}" onclick="alternarUsuario('${u.id}',${u.ativo!==false?'false':'true'})">${u.ativo!==false?'Desativar':'Ativar'}</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum usuário encontrado nesta busca.</td></tr>';
+  $('tbUsuarios').innerHTML=lista.length?lista.map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(u.usuario)}</td><td>${u.papel==='admin'?'Administrador':u.papel==='funcionario'?'Funcionário':'Sócio'}</td><td class="small">${esc(rotuloCidadesUsuario(u))}</td><td>${u.ativo!==false?'<span class="ok">Ativo</span>':'<span class="late">Desativado</span>'}</td><td>${u.papel==='admin'?'<span class="small">Acesso principal</span>':`<button onclick="editarUsuario('${u.id}')">Editar</button> <button class="${u.ativo!==false?'red':'green'}" onclick="alternarUsuario('${u.id}',${u.ativo!==false?'false':'true'})">${u.ativo!==false?'Desativar':'Ativar'}</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum usuário encontrado nesta busca.</td></tr>';
 }
 $('criarSocio').onclick=async()=>{
   $('uErro').textContent='';
@@ -1650,26 +1650,39 @@ $('criarSocio').onclick=async()=>{
   }catch(e){$('uErro').textContent=e.message;}
 };
 window.alternarUsuario=async(id,ativo)=>{try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({ativo})});await renderUsuarios()}catch(e){alert(e.message)}};
-window.trocarSenhaUsuario=async id=>{const senha=prompt('Digite a nova senha do usuário (mínimo 8 caracteres):');if(!senha)return;try{await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({senha})});alert('Senha alterada.')}catch(e){alert(e.message)}};
-window.editarCidadesUsuario=id=>{
+window.editarUsuario=id=>{
   const u=listaUsuarios.find(x=>String(x.id)===String(id)); if(!u||u.papel==='admin') return;
-  if($('editCidadesUsuarioId'))$('editCidadesUsuarioId').value=String(u.id);
-  if($('modalCidadesUsuarioResumo'))$('modalCidadesUsuarioResumo').textContent='Usuário: '+(u.nome||u.usuario)+' — marque as cidades permitidas.';
-  if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent='';
-  htmlCheckCidades('editCidadesUsuarioBox',u.cidadesIds||[]);
-  $('modalCidadesUsuario')?.classList.remove('hidden');
+  if($('editUsuarioId'))$('editUsuarioId').value=String(u.id);
+  if($('editUsuarioNome'))$('editUsuarioNome').value=u.nome||'';
+  if($('editUsuarioLogin'))$('editUsuarioLogin').value=u.usuario||'';
+  if($('editUsuarioPapel'))$('editUsuarioPapel').value=u.papel==='funcionario'?'funcionario':'socio';
+  if($('editUsuarioSenha'))$('editUsuarioSenha').value='';
+  if($('modalEditarUsuarioResumo'))$('modalEditarUsuarioResumo').textContent='Editando: '+(u.nome||u.usuario)+' (@'+u.usuario+')';
+  if($('editUsuarioErro'))$('editUsuarioErro').textContent='';
+  htmlCheckCidades('editUsuarioCidadesBox',u.cidadesIds||[]);
+  $('modalEditarUsuario')?.classList.remove('hidden');
 };
-$('cancelarCidadesUsuario')?.addEventListener('click',()=>$('modalCidadesUsuario')?.classList.add('hidden'));
-$('salvarCidadesUsuario')?.addEventListener('click',async()=>{
-  const id=$('editCidadesUsuarioId')?.value;
-  const cidadesIds=cidadesIdsSelecionadas('editCidadesUsuarioBox');
+$('cancelarEditarUsuario')?.addEventListener('click',()=>$('modalEditarUsuario')?.classList.add('hidden'));
+$('salvarEditarUsuario')?.addEventListener('click',async()=>{
+  const id=$('editUsuarioId')?.value;
+  const nome=$('editUsuarioNome')?.value.trim()||'';
+  const usuario=$('editUsuarioLogin')?.value.trim()||'';
+  const papel=$('editUsuarioPapel')?.value||'socio';
+  const senha=$('editUsuarioSenha')?.value||'';
+  const cidadesIds=cidadesIdsSelecionadas('editUsuarioCidadesBox');
   if(!id)return;
-  if(!cidadesIds.length){if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent='Selecione ao menos uma cidade.';return;}
+  if(nome.length<2){if($('editUsuarioErro'))$('editUsuarioErro').textContent='Informe o nome do usuário.';return;}
+  if(!usuario){if($('editUsuarioErro'))$('editUsuarioErro').textContent='Informe o usuário de login.';return;}
+  if(senha&&senha.length<8){if($('editUsuarioErro'))$('editUsuarioErro').textContent='A nova senha deve ter pelo menos 8 caracteres.';return;}
+  if(!cidadesIds.length){if($('editUsuarioErro'))$('editUsuarioErro').textContent='Selecione ao menos uma cidade de acesso.';return;}
+  const body={nome,usuario,papel,cidadesIds};
+  if(senha)body.senha=senha;
   try{
-    await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify({cidadesIds})});
-    $('modalCidadesUsuario')?.classList.add('hidden');
+    await api('/api/usuarios/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(body)});
+    $('modalEditarUsuario')?.classList.add('hidden');
     await renderUsuarios();
-  }catch(e){if($('editCidadesUsuarioErro'))$('editCidadesUsuarioErro').textContent=e.message;}
+    alert('Acesso atualizado.');
+  }catch(e){if($('editUsuarioErro'))$('editUsuarioErro').textContent=e.message;}
 });
 
 const ROTULOS_DOC={rg_frente:'RG frente',rg_verso:'RG verso',cpf_foto:'CPF',comprovante_endereco:'Comprovante de endereço',ctps_identificacao:'CTPS identificação',ctps_historico:'CTPS histórico'};
