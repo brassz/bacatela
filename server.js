@@ -96,6 +96,19 @@ function getSession(req) {
   return { token, user: s.user, expira: s.expira };
 }
 
+async function resolveSession(req) {
+  const session = getSession(req);
+  if (!session) return null;
+  const users = await db.readUsers();
+  const u = users.find(x => x.id === session.user.id);
+  if (!u || u.ativo === false) return null;
+  const fresh = safeUser(u);
+  if (session.user.portal) fresh.portal = session.user.portal;
+  if (session.user.sistemaPendente) fresh.sistemaPendente = session.user.sistemaPendente;
+  session.user = fresh;
+  return session;
+}
+
 function safeUser(u) {
   return {
     id: u.id,
@@ -417,7 +430,7 @@ async function handleApi(req, res) {
     }
   }
 
-  const session = getSession(req);
+  const session = await resolveSession(req);
   if (!session) return json(res, 401, { erro: 'Sessão encerrada.' });
 
   if (route === '/api/me' && req.method === 'GET') return json(res, 200, session.user);
@@ -478,7 +491,13 @@ async function handleApi(req, res) {
       const novo = { id: crypto.randomUUID(), usuario, nome, papel, ativo: true, criadoEm: new Date().toISOString(), cidadesIds, ...cred };
       arr.push(novo); await db.writeUsers(arr);
       return json(res, 201, safeUser(novo));
-    } catch { return json(res, 400, { erro: 'Não foi possível criar o sócio.' }); }
+    } catch (e) {
+      console.error('criar usuario', e);
+      if (/cidades_ids|42703/i.test(String(e.message || ''))) {
+        return json(res, 500, { erro: 'Coluna cidades_ids ausente no Supabase. Execute supabase/migrate_user_cidades.sql no SQL Editor.' });
+      }
+      return json(res, 400, { erro: 'Não foi possível criar o sócio.' });
+    }
   }
   if (route.startsWith('/api/usuarios/') && req.method === 'PUT') {
     if (!podeGerenciarAcessos(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem alterar usuários.' });
@@ -489,29 +508,38 @@ async function handleApi(req, res) {
       if (!u) return json(res, 404, { erro: 'Usuário não encontrado.' });
       if (u.papel === 'admin' && session.user.papel !== 'admin') return json(res, 403, { erro: 'O administrador principal não pode ser alterado.' });
       if (u.papel === 'admin' && body.ativo === false) return json(res, 400, { erro: 'O administrador principal não pode ser desativado.' });
-      if (typeof body.nome === 'string' && body.nome.trim().length >= 2) u.nome = body.nome.trim();
+      const patch = {};
+      if (typeof body.nome === 'string' && body.nome.trim().length >= 2) patch.nome = body.nome.trim();
       if (typeof body.usuario === 'string' && body.usuario.trim()) {
         const usuario = body.usuario.trim().toLowerCase();
         if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) return json(res, 400, { erro: 'Usuário deve ter 3 a 30 caracteres: letras, números, ponto, traço ou sublinhado.' });
         if (arr.some(x => x.id !== u.id && x.usuario.toLowerCase() === usuario)) return json(res, 409, { erro: 'Este usuário já existe.' });
-        u.usuario = usuario;
+        patch.usuario = usuario;
       }
       if (body.papel === 'funcionario' || body.papel === 'socio') {
         if (u.papel === 'admin') return json(res, 400, { erro: 'O tipo de acesso do administrador não pode ser alterado.' });
-        u.papel = body.papel;
+        patch.papel = body.papel;
       }
-      if (typeof body.ativo === 'boolean') u.ativo = body.ativo;
+      if (typeof body.ativo === 'boolean') patch.ativo = body.ativo;
       if (typeof body.senha === 'string' && body.senha) {
         if (body.senha.length < 8) return json(res, 400, { erro: 'A nova senha deve ter pelo menos 8 caracteres.' });
-        Object.assign(u, hashSenha(body.senha));
+        Object.assign(patch, hashSenha(body.senha));
       }
       if (body.cidadesIds !== undefined && u.papel !== 'admin') {
         const cidadesIds = normalizarCidadesIds(body.cidadesIds);
         if (!cidadesIds || !cidadesIds.length) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
-        u.cidadesIds = cidadesIds;
+        patch.cidadesIds = cidadesIds;
       }
-      await db.writeUsers(arr); return json(res, 200, safeUser(u));
-    } catch { return json(res, 400, { erro: 'Não foi possível alterar o usuário.' }); }
+      const updated = await db.updateUser(id, patch);
+      if (!updated) return json(res, 404, { erro: 'Usuário não encontrado.' });
+      return json(res, 200, safeUser(updated));
+    } catch (e) {
+      console.error('alterar usuario', e);
+      if (/cidades_ids|42703/i.test(String(e.message || ''))) {
+        return json(res, 500, { erro: 'Coluna cidades_ids ausente no Supabase. Execute supabase/migrate_user_cidades.sql no SQL Editor.' });
+      }
+      return json(res, 400, { erro: 'Não foi possível alterar o usuário.' });
+    }
   }
 
   if (route === '/api/data' && req.method === 'GET') {
