@@ -127,6 +127,9 @@ function uniqueById(arr) {
   }
   return Array.from(m.values());
 }
+function erroMigracaoCidadesIds() {
+  return 'Coluna cidades_ids ausente no Supabase. No SQL Editor execute: ALTER TABLE public.gestaoemprestimosalex_users ADD COLUMN IF NOT EXISTS cidades_ids JSONB DEFAULT NULL; NOTIFY pgrst, \'reload schema\';';
+}
 function normalizarCidadesIds(raw) {
   if (!Array.isArray(raw)) return null;
   const ids = [...new Set(raw.map(x => String(x || '').trim()).filter(Boolean))];
@@ -482,8 +485,8 @@ async function handleApi(req, res) {
       if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) return json(res, 400, { erro: 'Usuário deve ter 3 a 30 caracteres: letras, números, ponto, traço ou sublinhado.' });
       if (nome.length < 2) return json(res, 400, { erro: 'Informe o nome do usuário.' });
       if (senha.length < 8) return json(res, 400, { erro: 'A senha deve ter pelo menos 8 caracteres.' });
-      const cidadesIds = normalizarCidadesIds(body.cidadesIds);
-      if (!cidadesIds || !cidadesIds.length) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
+      const cidadesIds = db.hasCidadesIds() ? normalizarCidadesIds(body.cidadesIds) : null;
+      if (db.hasCidadesIds() && (!cidadesIds || !cidadesIds.length)) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
       const arr = await db.readUsers();
       if (arr.some(x => x.usuario.toLowerCase() === usuario)) return json(res, 409, { erro: 'Este usuário já existe.' });
       const cred = hashSenha(senha);
@@ -493,8 +496,8 @@ async function handleApi(req, res) {
       return json(res, 201, safeUser(novo));
     } catch (e) {
       console.error('criar usuario', e);
-      if (/cidades_ids|42703/i.test(String(e.message || ''))) {
-        return json(res, 500, { erro: 'Coluna cidades_ids ausente no Supabase. Execute supabase/migrate_user_cidades.sql no SQL Editor.' });
+      if (/cidades_ids|42703|cidades_ids_missing/i.test(String(e.message || e.code || ''))) {
+        return json(res, 500, { erro: erroMigracaoCidadesIds() });
       }
       return json(res, 400, { erro: 'Não foi possível criar o sócio.' });
     }
@@ -526,6 +529,7 @@ async function handleApi(req, res) {
         Object.assign(patch, hashSenha(body.senha));
       }
       if (body.cidadesIds !== undefined && u.papel !== 'admin') {
+        if (!db.hasCidadesIds()) return json(res, 500, { erro: erroMigracaoCidadesIds() });
         const cidadesIds = normalizarCidadesIds(body.cidadesIds);
         if (!cidadesIds || !cidadesIds.length) return json(res, 400, { erro: 'Selecione ao menos uma cidade de acesso.' });
         patch.cidadesIds = cidadesIds;
@@ -535,8 +539,8 @@ async function handleApi(req, res) {
       return json(res, 200, safeUser(updated));
     } catch (e) {
       console.error('alterar usuario', e);
-      if (/cidades_ids|42703/i.test(String(e.message || ''))) {
-        return json(res, 500, { erro: 'Coluna cidades_ids ausente no Supabase. Execute supabase/migrate_user_cidades.sql no SQL Editor.' });
+      if (/cidades_ids|42703|cidades_ids_missing/i.test(String(e.message || e.code || ''))) {
+        return json(res, 500, { erro: erroMigracaoCidadesIds() });
       }
       return json(res, 400, { erro: 'Não foi possível alterar o usuário.' });
     }
