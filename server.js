@@ -490,6 +490,16 @@ async function handleApi(req, res) {
       if (u.papel === 'admin' && session.user.papel !== 'admin') return json(res, 403, { erro: 'O administrador principal não pode ser alterado.' });
       if (u.papel === 'admin' && body.ativo === false) return json(res, 400, { erro: 'O administrador principal não pode ser desativado.' });
       if (typeof body.nome === 'string' && body.nome.trim().length >= 2) u.nome = body.nome.trim();
+      if (typeof body.usuario === 'string' && body.usuario.trim()) {
+        const usuario = body.usuario.trim().toLowerCase();
+        if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) return json(res, 400, { erro: 'Usuário deve ter 3 a 30 caracteres: letras, números, ponto, traço ou sublinhado.' });
+        if (arr.some(x => x.id !== u.id && x.usuario.toLowerCase() === usuario)) return json(res, 409, { erro: 'Este usuário já existe.' });
+        u.usuario = usuario;
+      }
+      if (body.papel === 'funcionario' || body.papel === 'socio') {
+        if (u.papel === 'admin') return json(res, 400, { erro: 'O tipo de acesso do administrador não pode ser alterado.' });
+        u.papel = body.papel;
+      }
       if (typeof body.ativo === 'boolean') u.ativo = body.ativo;
       if (typeof body.senha === 'string' && body.senha) {
         if (body.senha.length < 8) return json(res, 400, { erro: 'A nova senha deve ter pelo menos 8 caracteres.' });
