@@ -6,6 +6,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const db = require('./lib/db');
+const evo = require('./lib/evolution');
+const automacao = require('./lib/automacao');
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -177,6 +179,8 @@ function mesclarDadosPorCidades(atual, recebido, cidadesIds) {
   return { clientes, emprestimos, pagamentos, cidades: atual.cidades || [], despesas };
 }
 function podeGerenciarAcessos(user) { return user && (user.papel === 'admin' || user.papel === 'socio') && !ehPortalFranca(user); }
+function podeUsarAutomacao(user) { return Boolean(user && !ehPortalFranca(user)); }
+function podeConectarWhatsApp(user) { return podeGerenciarAcessos(user) || String(user && user.usuario || '').toLowerCase() === 'alex'; }
 const FRANCA_LOGIN_IDS = new Set([
   '7d3ed049-067a-4013-ae90-48bc55ca9cdb',
   '07f8eab9-2122-47df-88d2-bd12b5739c51'
@@ -330,6 +334,48 @@ function publicCadastro(item) {
   };
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function processarCobrancaAutomatica() {
+  const cfg = automacao.ler();
+  if (!cfg.ativo) return { ok: true, enviados: 0, motivo: 'desligada' };
+  const hoje = automacao.hojeISO();
+  if (hoje < String(cfg.dataInicio || '') || hoje > String(cfg.dataFim || '')) {
+    return { ok: true, enviados: 0, motivo: 'fora_periodo' };
+  }
+  const st = await evo.status();
+  if (!st.conectado) return { ok: false, enviados: 0, motivo: 'desconectado' };
+  const atual = await db.readDb();
+  const lista = automacao.candidatos(atual.data || {}, cfg);
+  let enviados = 0;
+  let falhas = 0;
+  for (const item of lista) {
+    if (automacao.enviadoHoje(item.empId)) continue;
+    try {
+      await evo.enviarTexto(item.telefone, item.texto);
+      automacao.registrarEnvio({ ok: true, cliente: item.cliente, telefone: item.telefone, empId: item.empId });
+      enviados += 1;
+      await sleep(1500);
+    } catch (e) {
+      falhas += 1;
+      automacao.registrarEnvio({ ok: false, cliente: item.cliente, telefone: item.telefone, empId: item.empId, erro: e.message || 'Falha no envio' });
+    }
+  }
+  const depois = automacao.ler();
+  automacao.salvar({ ...depois, ultimaExecucao: new Date().toISOString() });
+  return { ok: true, enviados, falhas, total: lista.length };
+}
+
+let autoTimer = null;
+function iniciarLoopAutomacao() {
+  if (ON_VERCEL || autoTimer) return;
+  autoTimer = setInterval(() => {
+    const cfg = automacao.ler();
+    if (!cfg.ativo) return;
+    processarCobrancaAutomatica().catch(err => console.error('automacao', err.message || err));
+  }, 5 * 60 * 1000);
+}
+
 function securityHeaders() {
   return {
     'X-Content-Type-Options': 'nosniff',
@@ -467,6 +513,108 @@ async function handleApi(req, res) {
   }
   if (route === '/api/logout' && req.method === 'POST') {
     return json(res, 200, { ok: true }, { 'Set-Cookie': 'sessao=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
+  }
+  if (route === '/api/automacao/status' && req.method === 'GET') {
+    if (!podeUsarAutomacao(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
+    try {
+      const st = await evo.status();
+      const cfg = automacao.ler();
+      return json(res, 200, {
+        ...st,
+        podeConectar: podeConectarWhatsApp(session.user),
+        campanha: {
+          ativo: cfg.ativo,
+          pastas: cfg.pastas,
+          dataInicio: cfg.dataInicio,
+          dataFim: cfg.dataFim,
+          soVencidos: cfg.soVencidos,
+          intervaloMinutos: cfg.intervaloMinutos,
+          ultimaExecucao: cfg.ultimaExecucao
+        },
+        log: (cfg.log || []).slice(0, 40)
+      });
+    } catch (e) {
+      return json(res, 500, { erro: e.message || 'Falha ao consultar o WhatsApp.' });
+    }
+  }
+  if (route === '/api/automacao/qr' && req.method === 'GET') {
+    if (!podeConectarWhatsApp(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem conectar o WhatsApp.' });
+    try {
+      return json(res, 200, await evo.qrcode());
+    } catch (e) {
+      return json(res, 500, { erro: e.message || 'Não foi possível gerar o QR Code.' });
+    }
+  }
+  if (route === '/api/automacao/desconectar' && req.method === 'POST') {
+    if (!podeConectarWhatsApp(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem desconectar o WhatsApp.' });
+    try {
+      return json(res, 200, await evo.desconectar());
+    } catch (e) {
+      return json(res, 500, { erro: e.message || 'Não foi possível desconectar.' });
+    }
+  }
+  if (route === '/api/automacao/enviar' && req.method === 'POST') {
+    if (!podeUsarAutomacao(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
+    try {
+      const body = await readBody(req, 80 * 1024);
+      try {
+        const r = await evo.enviarTexto(body.numero || body.telefone, body.texto);
+        automacao.registrarEnvio({
+          ok: true,
+          cliente: body.cliente || body.clienteNome || '',
+          telefone: r.numero,
+          empId: body.empId || ''
+        });
+        return json(res, 200, r);
+      } catch (e) {
+        automacao.registrarEnvio({
+          ok: false,
+          cliente: body.cliente || body.clienteNome || '',
+          telefone: String(body.numero || body.telefone || ''),
+          empId: body.empId || '',
+          erro: e.message || 'Falha no envio'
+        });
+        return json(res, e.status === 400 ? 400 : 500, { erro: e.message || 'Não foi possível enviar a cobrança.' });
+      }
+    } catch (e) {
+      return json(res, 400, { erro: e.message || 'Não foi possível enviar a cobrança.' });
+    }
+  }
+  if (route === '/api/automacao/campanha' && req.method === 'PUT') {
+    if (!podeConectarWhatsApp(session.user)) return json(res, 403, { erro: 'Somente administrador e sócio podem alterar a campanha automática.' });
+    try {
+      const body = await readBody(req, 50 * 1024);
+      const atual = automacao.ler();
+      const pastas = Array.isArray(body.pastas) ? body.pastas.filter(p => p === 'ativo' || p === 'negociado' || p === 'complicado') : atual.pastas;
+      const salvo = automacao.salvar({
+        ...atual,
+        ativo: Boolean(body.ativo),
+        pastas: pastas.length ? pastas : ['ativo'],
+        dataInicio: String(body.dataInicio || atual.dataInicio).slice(0, 10),
+        dataFim: String(body.dataFim || atual.dataFim).slice(0, 10),
+        soVencidos: body.soVencidos !== false,
+        intervaloMinutos: Math.max(30, Math.min(1440, Number(body.intervaloMinutos) || atual.intervaloMinutos || 180))
+      });
+      return json(res, 200, {
+        ativo: salvo.ativo,
+        pastas: salvo.pastas,
+        dataInicio: salvo.dataInicio,
+        dataFim: salvo.dataFim,
+        soVencidos: salvo.soVencidos,
+        intervaloMinutos: salvo.intervaloMinutos,
+        ultimaExecucao: salvo.ultimaExecucao
+      });
+    } catch (e) {
+      return json(res, 400, { erro: e.message || 'Não foi possível salvar a campanha.' });
+    }
+  }
+  if (route === '/api/automacao/tick' && req.method === 'POST') {
+    if (!podeConectarWhatsApp(session.user)) return json(res, 403, { erro: 'Sem permissão.' });
+    try {
+      return json(res, 200, await processarCobrancaAutomatica());
+    } catch (e) {
+      return json(res, 500, { erro: e.message || 'Falha ao processar a cobrança automática.' });
+    }
   }
   if (session.user.sistemaPendente) {
     return json(res, 403, { erro: 'Escolha o sistema para continuar.' });
@@ -733,6 +881,7 @@ ensureReady().then(() => {
     console.log(`Empréstimos Imperatriz online em http://${HOST}:${PORT}`);
     console.log('Dados salvos no Supabase (tabelas gestaoemprestimosalex_*).');
     if (!IS_PROD) console.log('Teste local: admin/Admin123! ou alex/ALEX123. Após o login, escolha o sistema.');
+    iniciarLoopAutomacao();
   });
 }).catch(e => {
   console.error('Supabase indisponível ou schema não aplicado.');
