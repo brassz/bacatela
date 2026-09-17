@@ -46,12 +46,13 @@
 <main class="app hidden" id="appPrincipal">
 <h1>💼 Gestão de Empréstimos</h1><p class="small" id="subtituloApp">Selecione a cidade no Resumo para ver e cadastrar clientes daquela unidade — os dados não se misturam.</p><div class="userbar"><div><b id="usuarioLogado">Usuário</b><div class="sync" id="syncStatus">Conectando ao servidor...</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="margin:0">Cidade</label><select id="cidadeTopo" style="width:auto;min-width:180px"></select><button class="gray" id="sairSistema">Sair</button></div></div>
 <section class="card dash"><div class="m"><small>Total emprestado</small><b id="dEmp">R$ 0,00</b></div><div class="m"><small>Valores a receber (ATIVOS)</small><b id="dSal">R$ 0,00</b><span class="dash-sub">Recebido em 30 dias: <b id="dSal30">R$ 0,00</b></span></div><div class="m"><small>Valores a receber Negociados</small><b id="dLucro">R$ 0,00</b><span class="dash-sub">Recebido em 30 dias: <b id="dLucro30">R$ 0,00</b></span></div><div class="m"><small>Valores a receber Complicados</small><b id="dTot">R$ 0,00</b><span class="dash-sub">Recebido em 30 dias: <b id="dTot30">R$ 0,00</b></span></div><div class="m"><small>Total recebido</small><b id="dRec">R$ 0,00</b></div><div class="m"><small>Valor vencido</small><b id="dVencido">R$ 0,00</b></div><div class="m"><small>Parcelas vencidas</small><b id="dAtr">0</b></div></section>
-<div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="pagamentos">Pagamentos</button><button data-t="historico">Histórico</button><button id="tabAutomacoes" data-t="automacoes">Automações</button><button data-t="multas">Multa</button><button data-t="saude">Saúde da Empresa</button><button id="tabFaturamento" class="hidden" data-t="faturamento">Faturamento</button><button id="tabDespesas" class="hidden" data-t="despesas">Despesas</button><button data-t="backup">Backup</button><button id="tabCidades" data-t="cidades">Cidades</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
+<div class="tabs"><button class="active" data-t="resumo">Resumo</button><button data-t="clientes">Clientes</button><button data-t="emprestimos">Empréstimos</button><button data-t="quitados">Quitados</button><button data-t="pagamentos">Pagamentos</button><button data-t="historico">Histórico</button><button id="tabAutomacoes" data-t="automacoes">Automações</button><button data-t="multas">Multa</button><button data-t="saude">Saúde da Empresa</button><button id="tabFaturamento" class="hidden" data-t="faturamento">Faturamento</button><button id="tabDespesas" class="hidden" data-t="despesas">Despesas</button><button data-t="backup">Backup</button><button id="tabCidades" data-t="cidades">Cidades</button><button id="tabSocios" class="hidden" data-t="socios">Acessos</button><button id="tabVerificacoes" data-t="verificacoes">Verificações</button></div>
 <section id="resumo" class="sec active"><div class="card"><h2>Cidade em visualização</h2><p class="small">Escolha a cidade. Clientes, empréstimos, pagamentos e o resumo passam a mostrar somente essa cidade.</p><label>Cidade</label><select id="cidadeResumo"></select><div id="cidadeAviso" class="notice" style="margin-top:12px"></div></div><div class="card"><div class="subtabs" id="resumoSubtabs"><button class="active" data-resumo-tab="ativo">Empréstimos Ativos</button><button data-resumo-tab="negociado">Empréstimos Negociados</button><button data-resumo-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="resumoAbaHint">Mostrando empréstimos ativos em andamento.</p><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaResumo" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaResumo">Buscar</button><button type="button" class="gray" id="limparBuscaResumo">Limpar</button></div><div class="summary-grid" id="resumoContadores" style="margin:12px 0"></div><div class="card" style="margin:12px 0;padding:14px"><h2>📅 Vencem hoje</h2><div id="listaHoje" class="empty">Nenhum empréstimo vence hoje.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>⚠️ Vencidos</h2><div id="listaVencidos" class="empty">Nenhum empréstimo vencido.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>✅ Em dia</h2><div id="listaAtivos" class="empty">Nenhum empréstimo em dia.</div></div><div class="card" style="margin:12px 0;padding:14px"><h2>Vencimentos e avisos</h2><div id="alerts">Nenhum vencimento.</div></div></div></section>
 <section id="cidades" class="sec"><div class="card"><h2>🏙️ Cidades</h2><p class="small">Cadastre as cidades da operação. Cada cliente fica preso à cidade em que foi criado.</p><div class="grid"><div><label>Nome da cidade</label><input id="cidNome" placeholder="Ex.: São Paulo"></div></div><div class="actions"><button id="salvarCidade">Adicionar cidade</button></div></div><div class="card"><h2>Cidades cadastradas</h2><div class="table"><table><thead><tr><th>Cidade</th><th>Clientes</th><th>Ações</th></tr></thead><tbody id="tbCidades"></tbody></table></div></div></section>
 <section id="saude" class="sec"><div class="card"><h2>📊 Saúde da Empresa</h2><div id="saudeStatus" class="notice">Calculando...</div><div id="saudeResumo" class="summary-grid"></div><div id="saudeAnalise"></div></div></section>
 <section id="clientes" class="sec"><div class="card"><h2>Cadastro de cliente</h2><div class="grid"><div><label>Nome</label><input id="cNome"></div><div><label>Telefone</label><input id="cTel"></div><div><label>Documento</label><input id="cDoc"></div><div><label>Endereço</label><input id="cEnd"></div></div><label>Observações</label><textarea id="cObs"></textarea><div class="actions"><button id="salvarCliente">Salvar cliente</button><button class="gray" id="limparCliente">Cancelar edição</button></div></div><div class="card"><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaCliente" placeholder="Digite o nome, telefone ou documento"></div><button type="button" id="btnBuscaCliente">Buscar</button><button type="button" class="gray" id="limparBuscaCliente">Limpar</button></div><div class="table"><table><thead><tr><th>Data de cadastro</th><th>Nome</th><th>Telefone</th><th>Documento</th><th>Responsável</th><th>Empréstimos</th><th>Ações</th></tr></thead><tbody id="tbClientes"></tbody></table></div><div class="paginacao" id="pagClientes"></div></div><div id="historicoCliente" class="card hidden"><div class="history-head"><div><h2 id="histTitulo">Empréstimos do cliente</h2><div id="histContato"></div></div><div class="actions"><button class="green" id="compartilharHistorico">📤 Enviar histórico</button><button class="gray" id="fecharHistorico">Fechar</button></div></div><div id="histResumo" class="summary-grid"></div><div id="histLista"></div></div></section>
 <section id="emprestimos" class="sec"><div class="card"><h2 id="empFormTitulo">Novo empréstimo</h2><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaFormEmp" placeholder="Digite o nome do cliente para achar na lista"></div><button type="button" id="btnBuscaFormEmp">Buscar</button><button type="button" class="gray" id="limparBuscaFormEmp">Limpar</button></div><div class="grid"><div><label>Cliente</label><select id="eCliente"></select></div><div><label>Valor emprestado</label><input id="ePrincipal" type="number" step="0.01"></div><div><label>Juros</label><input id="eJuros" type="number" step="0.01" min="0"></div><div><label>Frequência</label><select id="eFreq"><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="daily">Diário (30 dias)</option></select></div><div><label>Número de parcelas</label><input id="eQtd" type="number" min="1" value="4"></div><div><label>Primeiro vencimento</label><input id="eData" type="date"></div></div><p class="small" id="eSaldoContrato">Saldo do contrato: R$ 0,00 (emprestado + juros)</p><p class="small">A data é salva exatamente como foi escolhida, sem conversão de fuso horário.</p><div class="actions"><button type="button" id="salvarEmp">Criar empréstimo</button><button type="button" class="gray" id="limparEmp">Cancelar edição</button></div><input type="hidden" id="eEditId" value=""></div><div class="card"><div class="subtabs" id="empSubtabs"><button class="active" data-emp-tab="ativo">Empréstimos Ativos</button><button data-emp-tab="negociado">Empréstimos Negociados</button><button data-emp-tab="complicado">Empréstimos Complicados</button></div><p class="small" id="empAbaHint">Empréstimos em andamento. Use Negociado ou Complicado para organizar a carteira.</p><div class="grid"><div><label>Filtrar empréstimos por cliente</label><select id="filtroEmpCliente"><option value="">Todos os clientes</option></select></div><div><label>Filtrar por frequência</label><select id="filtroEmpFreq"><option value="">Todas as frequências</option><option value="daily">Somente diários</option><option value="weekly">Somente semanais</option><option value="monthly">Somente mensais</option></select></div></div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 12px"><div style="flex:1;min-width:220px"><label>Buscar por cliente</label><input id="buscaEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaEmp">Buscar</button><button type="button" class="gray" id="limparBuscaEmp">Limpar</button></div><div class="table"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Emprestado</th><th>Juros</th><th>Recebido</th><th>Saldo</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbEmp"></tbody></table></div><div class="paginacao" id="pagEmp"></div></div></section>
+<section id="quitados" class="sec"><div class="card"><h2>✅ Clientes quitados</h2><p class="small">Clientes da cidade selecionada que já quitaram todos os empréstimos. Use Buscar para achar pelo nome, telefone ou documento.</p><div class="busca-bar"><div><label>Buscar cliente</label><input id="buscaQuitados" placeholder="Digite o nome, telefone ou documento"></div><button type="button" id="btnBuscaQuitados">Buscar</button><button type="button" class="gray" id="limparBuscaQuitados">Limpar</button></div><div class="summary-grid" id="quitadosContadores" style="margin:12px 0"></div><div class="table"><table><thead><tr><th>Nome</th><th>Telefone</th><th>Documento</th><th>Empréstimos</th><th>Última quitação</th><th>Emprestado</th><th>Recebido</th><th>Ações</th></tr></thead><tbody id="tbQuitados"></tbody></table></div><div class="paginacao" id="pagQuitados"></div></div></section>
 <section id="historico" class="sec"><div class="card"><h2>📜 Histórico de empréstimos</h2><p class="small">Resumo compacto. Use Buscar para achar o cliente e “Ver parcelas” para abrir o detalhe.</p><div class="grid"><div><label>Buscar cliente</label><input id="histBuscaCliente" placeholder="Digite o nome do cliente"></div><div><label>Cliente</label><select id="histFiltroCliente"><option value="">Todos os clientes</option></select></div></div><div class="actions"><button type="button" id="btnBuscaHist">Buscar</button><button type="button" class="gray" id="limparBuscaHist">Limpar</button></div></div><div id="histPagina"></div></section>
 <section id="pagamentos" class="sec"><div class="card"><h2 id="pagFormTitulo">Registrar pagamento</h2><p class="small">Selecione o empréstimo e a parcela paga. Use Buscar para achar o empréstimo pelo nome do cliente. Se o valor for menor que a parcela, a diferença é diluída nas parcelas restantes. Se for maior, você escolhe se o extra abate no valor emprestado ou na próxima parcela.</p><div class="busca-bar"><div><label>Buscar empréstimo do cliente</label><input id="buscaPagEmp" placeholder="Digite o nome do cliente"></div><button type="button" id="btnBuscaPag">Buscar</button><button type="button" class="gray" id="limparBuscaPag">Limpar</button></div><div class="grid"><div><label>Empréstimo</label><select id="pEmp"></select></div><div><label>Parcela</label><select id="pParc"></select></div><div><label>Valor pago</label><input id="pValor" type="number" step="0.01"></div><div><label>Data do pagamento</label><input id="pData" type="date"></div><div><label>Forma</label><select id="pForma"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>Outro</option></select></div><div><label>Observação</label><input id="pObs"></div></div><div class="actions"><button id="salvarPag">Registrar pagamento</button><button class="gray" id="limparPag">Cancelar edição</button></div></div><div class="card"><h2>Histórico de pagamentos</h2><p class="small">A busca acima também filtra este histórico pelo cliente.</p><div class="table"><table><thead><tr><th>Data</th><th>Cliente</th><th>Parcela</th><th>Valor</th><th>Forma</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="tbPag"></tbody></table></div></div></section>
 <section id="automacoes" class="sec">
@@ -197,7 +198,7 @@
 })();
 const $=id=>document.getElementById(id);
 const BACKUP_INICIAL={clientes:[],emprestimos:[],pagamentos:[],cidades:[],despesas:[]};
-let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,editDesp=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pageFat=1,pageAuto=1,pendenteExcessoPag=null,pendenteFaltaPag=null,pendenteMensagem=null,evoConectado=false,evoPoll=null,autoSel=new Set(),autoListaCache=[];
+let db=JSON.parse(JSON.stringify(BACKUP_INICIAL)),editCliente=null,editEmp=null,editPag=null,editDesp=null,clienteHistorico=null,currentUser=null,saveTimer=null,serverRevision=0,cidadeAtualId=localStorage.getItem('cidadeAtualId')||'',empAba='ativo',resumoAba='ativo',pageCli=1,pageEmp=1,pageFat=1,pageAuto=1,pageQuit=1,pendenteExcessoPag=null,pendenteFaltaPag=null,pendenteMensagem=null,evoConectado=false,evoPoll=null,autoSel=new Set(),autoListaCache=[];
 const POR_PAGINA=10;
 const btnEdit=(fn,id)=>`<button class="icon" title="Editar" onclick="${fn}('${id}')">✎</button>`;
 function fatia(lista,pag){
@@ -214,6 +215,7 @@ window.irPagCli=n=>{pageCli=n;runScoped(renderClientes)};
 window.irPagEmp=n=>{pageEmp=n;runScoped(renderEmp)};
 window.irPagFat=n=>{pageFat=n;renderFaturamento()};
 window.irPagAuto=n=>{pageAuto=n;renderListaAutomacao()};
+window.irPagQuit=n=>{pageQuit=n;runScoped(renderQuitados)};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
 function responsavelAtual(){return currentUser?.nome||currentUser?.usuario||''}
 const pad=n=>String(n).padStart(2,'0');
@@ -437,7 +439,7 @@ function escolherCidade(id){
   if(cidadeAtualId) localStorage.setItem('cidadeAtualId',cidadeAtualId);
   else localStorage.removeItem('cidadeAtualId');
   clienteHistorico=null;
-  pageCli=1;pageEmp=1;pageFat=1;
+  pageCli=1;pageEmp=1;pageFat=1;pageQuit=1;
   if($('historicoCliente')) $('historicoCliente').classList.add('hidden');
   render();
 }
@@ -534,6 +536,11 @@ function textoVenc(e){
 function todasParcelasPagas(e){return e.parcelas.length>0&&e.parcelas.every(p=>restanteParcela(e,p)<=.01)}
 function atrasado(e){return e.parcelas.some(p=>restanteParcela(e,p)>.01&&p.data<=hoje())}
 function statusEmp(e){return (e.dataQuitacao||(todasParcelasPagas(e)&&capitalPendente(e)<=.01))?'Quitado':atrasado(e)?'Atrasado':'Em aberto'}
+function ehQuitado(e){return !!e&&(statusEmp(e)==='Quitado'||saldo(e)<=.01)}
+function empsDoCliente(id){return (db.emprestimos||[]).filter(e=>String(e.clienteId)===String(id))}
+function clienteQuitado(c){const emps=empsDoCliente(c.id);return !!emps.length&&emps.every(ehQuitado)}
+function ultimaQuitacaoCliente(c){const datas=empsDoCliente(c.id).map(dataQuitacao).filter(Boolean).sort();return datas.length?datas[datas.length-1]:''}
+function recebidoEmp(e){return (db.pagamentos||[]).filter(p=>String(p.empId)===String(e.id)&&!ehMulta(p)&&!ehMeta(p)).reduce((a,p)=>a+Number(p.valor||0),0)}
 function pastaEmp(e){return (e&&(e.pasta==='negociado'||e.pasta==='complicado'))?e.pasta:'ativo'}
 function badgePasta(e){const p=pastaEmp(e);if(p==='negociado')return '<span class="badge open">Negociado</span>';if(p==='complicado')return '<span class="badge late">Complicado</span>';return ''}
 function snapshotFase(e){
@@ -908,7 +915,7 @@ function renderSaude(){
  if($('saudeResumo')) $('saudeResumo').innerHTML=`<div class="m"><small>Clientes cadastrados</small><b>${clientes}</b></div><div class="m"><small>Clientes ativos</small><b>${clientesAtivos}</b></div><div class="m"><small>Clientes em atraso</small><b>${clientesAtrasados}</b></div><div class="m"><small>Empréstimos ativos</small><b>${emprestimosAtivos}</b></div><div class="m"><small>Parcelas vencidas</small><b>${parcelasVencidas}</b></div><div class="m"><small>Taxa de atraso</small><b>${(taxaAtraso*100).toFixed(1).replace('.',',')}%</b></div><div class="m"><small>Total recebido</small><b>${brl(recebido)}</b></div><div class="m"><small>Valor vencido</small><b>${brl(vencido)}</b></div>`;
  if($('saudeAnalise')) $('saudeAnalise').innerHTML=`<h3>Análise</h3>${motivos.map(m=>`<div class="notice ${nivel==='RUIM'?'late':''}">${esc(m)}</div>`).join('')}<p class="small">Critério: Ótima = menos de 15% dos clientes ativos em atraso; Boa = entre 15% e 35% ou alguns vencimentos acumulados; Ruim = 35% ou mais dos clientes ativos em atraso, ou combinação de muitos vencimentos e inadimplência.</p>`;
 }
-function render(skipSave){if(!skipSave)save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dSal').textContent=brl(jurosAReceberPasta('ativo'));if($('dSal30'))$('dSal30').textContent=brl(jurosRecebido30Pasta('ativo'));$('dLucro').textContent=brl(jurosAReceberPasta('negociado'));if($('dLucro30'))$('dLucro30').textContent=brl(jurosRecebido30Pasta('negociado'));$('dTot').textContent=brl(jurosAReceberPasta('complicado'));if($('dTot30'))$('dTot30').textContent=brl(jurosRecebido30Pasta('complicado'));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+(e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);renderClientes();opts();renderEmp();renderPag();renderMultas();renderSaude();renderResumoListas();renderPaginaHistorico();if(clienteHistorico)renderHistorico(clienteHistorico)});renderFaturamento();renderDespesas(); }
+function render(skipSave){if(!skipSave)save();preencherCidadesSelect();renderCidades();runScoped(()=>{$('dEmp').textContent=brl(db.emprestimos.reduce((a,e)=>a+Number(e.principal),0));$('dSal').textContent=brl(jurosAReceberPasta('ativo'));if($('dSal30'))$('dSal30').textContent=brl(jurosRecebido30Pasta('ativo'));$('dLucro').textContent=brl(jurosAReceberPasta('negociado'));if($('dLucro30'))$('dLucro30').textContent=brl(jurosRecebido30Pasta('negociado'));$('dTot').textContent=brl(jurosAReceberPasta('complicado'));if($('dTot30'))$('dTot30').textContent=brl(jurosRecebido30Pasta('complicado'));$('dRec').textContent=brl(db.pagamentos.reduce((a,p)=>a+Number(p.valor),0));$('dVencido').textContent=brl(db.emprestimos.reduce((a,e)=>a+valorVencido(e),0));$('dAtr').textContent=db.emprestimos.reduce((a,e)=>a+(e.parcelas||[]).filter(p=>restanteParcela(e,p)>.01&&p.data<=hoje()).length,0);renderClientes();opts();renderEmp();renderQuitados();renderPag();renderMultas();renderSaude();renderResumoListas();renderPaginaHistorico();if(clienteHistorico)renderHistorico(clienteHistorico)});renderFaturamento();renderDespesas(); }
 function listaClientesView(){
   const q=qBusca('buscaCliente');
   return [...db.clientes].filter(c=>clienteBate(c,q)).sort((a,b)=>(a.criadoEm||'9999-12-31').localeCompare(b.criadoEm||'9999-12-31')||(a.criadoHora||'').localeCompare(b.criadoHora||'')||a.nome.localeCompare(b.nome,'pt-BR'));
@@ -917,12 +924,42 @@ function listaEmpView(){
   const f=$('filtroEmpCliente').value,ff=$('filtroEmpFreq').value;
   const q=($('buscaEmp')&&$('buscaEmp').value||'').trim().toLowerCase();
   return [...db.emprestimos].filter(e=>{
+    if(ehQuitado(e))return false;
     if(f&&String(e.clienteId)!==String(f))return false;
     if(ff&&e.freq!==ff)return false;
     if(pastaEmp(e)!==empAba)return false;
     if(q&&!nome(e.clienteId).toLowerCase().includes(q))return false;
     return true;
   }).sort(ordenarPorVencimento);
+}
+function listaQuitadosView(){
+  const q=qBusca('buscaQuitados');
+  return [...db.clientes].filter(c=>clienteQuitado(c)&&clienteBate(c,q)).sort((a,b)=>{
+    const da=ultimaQuitacaoCliente(b)||'';
+    const dbq=ultimaQuitacaoCliente(a)||'';
+    return da.localeCompare(dbq)||a.nome.localeCompare(b.nome,'pt-BR');
+  });
+}
+function renderQuitados(){
+  const tb=$('tbQuitados'); if(!tb) return;
+  const func=currentUser?.papel==='funcionario';
+  const lista=listaQuitadosView();
+  const todos=(db.clientes||[]).filter(clienteQuitado);
+  const empsQ=todos.flatMap(c=>empsDoCliente(c.id));
+  const recQ=empsQ.reduce((a,e)=>a+recebidoEmp(e),0);
+  const empQ=empsQ.reduce((a,e)=>a+Number(e.principal||0),0);
+  if($('quitadosContadores')) $('quitadosContadores').innerHTML=`<div class="m"><small>Clientes quitados</small><b>${todos.length}</b></div><div class="m"><small>Empréstimos quitados</small><b>${empsQ.length}</b></div><div class="m"><small>Total emprestado</small><b>${brl(empQ)}</b></div><div class="m"><small>Total recebido</small><b>${brl(recQ)}</b></div>`;
+  const pg=fatia(lista,pageQuit);pageQuit=pg.pag;
+  const q=qBusca('buscaQuitados');
+  tb.innerHTML=pg.itens.length?pg.itens.map(c=>{
+    const emps=empsDoCliente(c.id);
+    const rec=emps.reduce((a,e)=>a+recebidoEmp(e),0);
+    const emp=emps.reduce((a,e)=>a+Number(e.principal||0),0);
+    const dq=ultimaQuitacaoCliente(c);
+    const acoes=`<button class="green" onclick="verCliente('${c.id}')">Detalhes</button> ${func?'':`<button class="green" onclick="compartilharCliente('${c.id}')">📤 Enviar histórico</button> `}<button onclick="novoEmp('${c.id}')">Novo empréstimo</button>`;
+    return `<tr><td>${esc(c.nome)}</td><td>${esc(c.tel)}</td><td>${esc(c.doc)}</td><td>${emps.length}</td><td>${dq?dataBR(dq):'—'}</td><td>${brl(emp)}</td><td>${brl(rec)}</td><td>${acoes}</td></tr>`;
+  }).join(''):`<tr><td colspan="8" class="empty">${q?'Nenhum cliente quitado encontrado nesta busca.':'Nenhum cliente quitado nesta cidade.'}</td></tr>`;
+  htmlPaginacao('pagQuitados',pg.pag,pg.total,pg.qtd,'irPagQuit');
 }
 function mostrarClienteNaLista(id){
   pageCli=irPaginaDoId(listaClientesView(),id);
@@ -2204,6 +2241,7 @@ function ligaBusca(inputId,btnId,limparId,fn){
   $(inputId)?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fn();}});
 }
 ligaBusca('buscaCliente','btnBuscaCliente','limparBuscaCliente',()=>{pageCli=1;runScoped(renderClientes)});
+ligaBusca('buscaQuitados','btnBuscaQuitados','limparBuscaQuitados',()=>{pageQuit=1;runScoped(renderQuitados)});
 ligaBusca('buscaFormEmp','btnBuscaFormEmp','limparBuscaFormEmp',()=>opts());
 ligaBusca('buscaPagEmp','btnBuscaPag','limparBuscaPag',()=>{opts();runScoped(renderPag)});
 ligaBusca('buscaResumo','btnBuscaResumo','limparBuscaResumo',()=>runScoped(renderResumoListas));
@@ -2242,8 +2280,8 @@ function aplicarPermissoes(){
       b.classList.toggle('hidden',!!franca);
       return;
     }
-    if(franca) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','pagamentos','historico','multas'].includes(b.dataset.t));
-    else if(funcionario) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','pagamentos','historico','multas','automacoes'].includes(b.dataset.t));
+    if(franca) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','quitados','pagamentos','historico','multas'].includes(b.dataset.t));
+    else if(funcionario) b.classList.toggle('hidden', !['resumo','clientes','emprestimos','quitados','pagamentos','historico','multas','automacoes'].includes(b.dataset.t));
     else if(b.id==='tabVerificacoes'||b.id==='tabCidades'||b.id==='tabSocios') b.classList.toggle('hidden', b.id==='tabSocios' && !gerenciaAcessos);
   });
   ['cidadeTopo','cidadeResumo'].forEach(id=>{
