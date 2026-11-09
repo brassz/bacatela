@@ -105,6 +105,11 @@ CREATE TABLE IF NOT EXISTS public.gestaoemprestimosalex_despesas (
   criado_em DATE
 );
 
+ALTER TABLE public.gestaoemprestimosalex_despesas
+  ADD COLUMN IF NOT EXISTS status_pagamento TEXT DEFAULT 'pendente';
+ALTER TABLE public.gestaoemprestimosalex_despesas
+  ADD COLUMN IF NOT EXISTS valor_pago NUMERIC(14, 2) DEFAULT 0;
+
 CREATE INDEX IF NOT EXISTS gestaoemprestimosalex_despesas_data_idx
   ON public.gestaoemprestimosalex_despesas (data);
 
@@ -231,7 +236,9 @@ AS $$
           'data', d.data,
           'cidadeId', d.cidade_id,
           'obs', d.obs,
-          'criadoEm', d.criado_em
+          'criadoEm', d.criado_em,
+          'statusPagamento', COALESCE(d.status_pagamento, 'pendente'),
+          'valorPago', COALESCE(d.valor_pago, 0)
         ) ORDER BY d.data DESC, d.descricao)
         FROM gestaoemprestimosalex_despesas d
       ), '[]'::jsonb)
@@ -286,7 +293,7 @@ BEGIN
     SELECT 1 FROM jsonb_array_elements(v_desp) x WHERE x->>'id' = d.id
   );
 
-  INSERT INTO gestaoemprestimosalex_despesas (id, descricao, valor, data, cidade_id, obs, criado_em)
+  INSERT INTO gestaoemprestimosalex_despesas (id, descricao, valor, data, cidade_id, obs, criado_em, status_pagamento, valor_pago)
   SELECT
     x->>'id',
     COALESCE(x->>'descricao', ''),
@@ -294,7 +301,9 @@ BEGIN
     (x->>'data')::DATE,
     NULLIF(x->>'cidadeId', ''),
     x->>'obs',
-    NULLIF(x->>'criadoEm', '')::DATE
+    NULLIF(x->>'criadoEm', '')::DATE,
+    COALESCE(NULLIF(x->>'statusPagamento', ''), 'pendente'),
+    COALESCE((x->>'valorPago')::NUMERIC, 0)
   FROM jsonb_array_elements(v_desp) x
   WHERE COALESCE(x->>'id', '') <> ''
   ON CONFLICT (id) DO UPDATE SET
@@ -303,7 +312,9 @@ BEGIN
     data = EXCLUDED.data,
     cidade_id = EXCLUDED.cidade_id,
     obs = EXCLUDED.obs,
-    criado_em = EXCLUDED.criado_em;
+    criado_em = EXCLUDED.criado_em,
+    status_pagamento = EXCLUDED.status_pagamento,
+    valor_pago = EXCLUDED.valor_pago;
 
   DELETE FROM gestaoemprestimosalex_pagamentos g
   WHERE NOT EXISTS (
